@@ -159,11 +159,16 @@ dependencies {
     implementation fg.deobf("curse.maven:hostile-neural-networks-552574:5643099")
     implementation fg.deobf("curse.maven:jei-238222:5739402")
 
-
     implementation fg.deobf("curse.maven:mekanism-268560:5662583")
     implementation fg.deobf("curse.maven:cofh-core-69162:5374122")
     implementation fg.deobf("curse.maven:thermal-foundation-222880:5443583")
     implementation fg.deobf("curse.maven:thermal-expansion-69163:5372749")
+
+    implementation fg.deobf("curse.maven:rhino-416294:6186971")
+    implementation fg.deobf("curse.maven:architectury-api-419699:5137938")
+    implementation fg.deobf("curse.maven:kubejs-238086:5853326")
+
+    implementation fg.deobf("curse.maven:the-twilight-forest-227639:5468648")
 
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }

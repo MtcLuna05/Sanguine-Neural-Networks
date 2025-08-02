@@ -353,6 +353,9 @@ public class VSBlockEntity extends BlockEntity implements MenuProvider {
             EntityType<?> entityCheck = ForgeRegistries.ENTITY_TYPES.getValue(recipe.getEntity());
 
             DataModel modelCheck = DataModelRegistry.INSTANCE.getForEntity(entityCheck);
+
+            if(modelCheck == null) continue;
+
             DataModelItem.setStoredModel(modelStack, modelCheck);
 
             String idCheck = modelStack.getOrCreateTagElement("data_model").getString("id");

@@ -8,9 +8,11 @@ import dev.shadowsoffire.hostilenetworks.data.DataModel;
 import dev.shadowsoffire.hostilenetworks.data.DataModelRegistry;
 import dev.shadowsoffire.hostilenetworks.data.ModelTier;
 import dev.shadowsoffire.hostilenetworks.item.DataModelItem;
+import dev.shadowsoffire.hostilenetworks.jei.TickingDataModelWrapper;
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
 import mezz.jei.api.gui.drawable.IDrawable;
+import mezz.jei.api.gui.ingredient.IRecipeSlotDrawable;
 import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
 import mezz.jei.api.helpers.IGuiHelper;
 import mezz.jei.api.recipe.IFocusGroup;
@@ -20,11 +22,16 @@ import mezz.jei.api.recipe.category.IRecipeCategory;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraftforge.registries.ForgeRegistries;
+
+import java.util.Iterator;
+import java.util.List;
 
 public class VirtualSacrificer implements IRecipeCategory<ModelRecipe> {
     public static final ResourceLocation UID = new ResourceLocation(SanguineNeuralNetworks.MODID, "virtual_sacrificer/recipe");
@@ -33,7 +40,10 @@ public class VirtualSacrificer implements IRecipeCategory<ModelRecipe> {
 
     private final IDrawable background;
     private final IDrawable icon;
+
     private ModelTier currentTier;
+    private int ticks = 0;
+    private long lastTickTime = 0L;
 
     public VirtualSacrificer(IGuiHelper guiHelper) {
         this.currentTier = ModelTier.FAULTY;
@@ -77,7 +87,17 @@ public class VirtualSacrificer implements IRecipeCategory<ModelRecipe> {
         ).addItemStack(modelStack);
     }
 
-    private int changeCD = 0;
+    @Override
+    public void onDisplayedIngredientsUpdate(ModelRecipe recipe, List<IRecipeSlotDrawable> recipeSlots, IFocusGroup focuses) {
+        if(++ticks % 20 != 0) return;
+
+        ModelTier next = this.currentTier.next();
+        if (next == this.currentTier) {
+            next = ModelTier.BASIC;
+        }
+
+        this.currentTier = next;
+    }
 
     @Override
     public void draw(ModelRecipe recipe, IRecipeSlotsView recipeSlotsView, GuiGraphics guiGraphics, double mouseX, double mouseY) {
@@ -85,17 +105,6 @@ public class VirtualSacrificer implements IRecipeCategory<ModelRecipe> {
 
         Component energy = Component.translatable("jei."+ SanguineNeuralNetworks.MODID + ".energy", recipe.getEnergy());
         guiGraphics.drawString(font, energy, 2, 44, 0xFFFF0000);
-
-        changeCD++;
-        if(changeCD >= 120) {
-            changeCD = 0;
-
-            if(!currentTier.next().equals(currentTier)) {
-                currentTier = currentTier.next();
-            } else {
-                currentTier = ModelTier.FAULTY;
-            }
-        }
 
         Component tier = currentTier.getComponent();
         Component blood = Component.translatable("jei."+ SanguineNeuralNetworks.MODID + ".blood", recipe.getBlood()[currentTier.ordinal()]);
