@@ -1,7 +1,7 @@
 package com.leo.sanguine_networks.init;
 
 import com.leo.sanguine_networks.SanguineNeuralNetworks;
-import com.leo.sanguine_networks.menu.VSacrificerMenu;
+import com.leo.sanguine_networks.block.menu.VSacrificerMenu;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraftforge.common.extensions.IForgeMenuType;

@@ -1,8 +1,11 @@
-package com.leo.sanguine_networks.menu;
+package com.leo.sanguine_networks.block.menu;
 
 import com.leo.sanguine_networks.block.entity.VSBlockEntity;
 import com.leo.sanguine_networks.init.ModBlocks;
 import com.leo.sanguine_networks.init.ModMenuTypes;
+import com.leo.sanguine_networks.recipe.CatalystRecipe;
+import com.leo.sanguine_networks.util.Pair;
+import dev.shadowsoffire.hostilenetworks.Hostile;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -12,6 +15,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.items.SlotItemHandler;
+import org.jetbrains.annotations.NotNull;
 
 public class VSacrificerMenu extends AbstractContainerMenu {
 
@@ -29,8 +33,18 @@ public class VSacrificerMenu extends AbstractContainerMenu {
         addPlayerHotbar(inv);
 
         this.be.getCapability(ForgeCapabilities.ITEM_HANDLER).ifPresent(iItemHandler -> {
-            this.addSlot(new SlotItemHandler(iItemHandler, 0, 17, 36));
-            this.addSlot(new SlotItemHandler(iItemHandler, 1, 80, 64));
+            this.addSlot(new SlotItemHandler(iItemHandler, 0, 17, 36) {
+                @Override
+                public boolean mayPlace(@NotNull ItemStack stack) {
+                    return stack.is(Hostile.Items.DATA_MODEL.get());
+                }
+            });
+            this.addSlot(new SlotItemHandler(iItemHandler, 1, 80, 64) {
+                @Override
+                public boolean mayPlace(@NotNull ItemStack stack) {
+                    return !iItemHandler.getStackInSlot(0).isEmpty() && level.getRecipeManager().getAllRecipesFor(CatalystRecipe.Type.INSTANCE).stream().anyMatch(r -> r.getInput().test(stack));
+                }
+            });
         });
 
         addDataSlots(data);

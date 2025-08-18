@@ -3,7 +3,7 @@ package com.leo.sanguine_networks.block.entity;
 import com.leo.sanguine_networks.Config;
 import com.leo.sanguine_networks.SanguineNeuralNetworks;
 import com.leo.sanguine_networks.init.ModBlockEntities;
-import com.leo.sanguine_networks.menu.VSacrificerMenu;
+import com.leo.sanguine_networks.block.menu.VSacrificerMenu;
 import com.leo.sanguine_networks.recipe.CatalystRecipe;
 import com.leo.sanguine_networks.recipe.ModelRecipe;
 import com.leo.sanguine_networks.util.Pair;
@@ -22,7 +22,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.Containers;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.SimpleContainer;
@@ -328,12 +327,10 @@ public class VSBlockEntity extends BlockEntity implements MenuProvider {
 
         for (CatalystRecipe recipe : catalystRecipes) {
             if(recipe.getInput().test(stack)) {
-                missingModel = true;
                 return Pair.of(recipe.getMultiplier(), recipe.getUses());
             }
         }
 
-        missingModel = false;
         return Pair.of(0f, 0);
     }
 

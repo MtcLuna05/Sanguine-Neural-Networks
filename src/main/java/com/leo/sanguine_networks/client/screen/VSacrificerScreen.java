@@ -1,7 +1,7 @@
 package com.leo.sanguine_networks.client.screen;
 
 import com.leo.sanguine_networks.SanguineNeuralNetworks;
-import com.leo.sanguine_networks.menu.VSacrificerMenu;
+import com.leo.sanguine_networks.block.menu.VSacrificerMenu;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
