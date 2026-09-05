@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "C": {
+      "item": "minecraft:comparator"
+    },
+    "G": {
+      "item": "neovitae:blood_stained_glass"
+    },
+    "R": {
+      "item": "neovitae:rune_blank"
+    }
+  },
+  "pattern": [
+    "RGR",
+    "GCG",
+    "RGR"
+  ],
+  "result": {
+    "count": 4,
+    "id": "sanguine_networks:suffering_io_port"
+  }
+}

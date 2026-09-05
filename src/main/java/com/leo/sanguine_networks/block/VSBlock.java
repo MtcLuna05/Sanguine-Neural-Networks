@@ -3,7 +3,6 @@ package com.leo.sanguine_networks.block;
 import com.leo.sanguine_networks.block.entity.VSBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -17,10 +16,13 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraftforge.network.NetworkHooks;
+
 import org.jetbrains.annotations.Nullable;
 
 public class VSBlock extends BaseEntityBlock {
+    public static final com.mojang.serialization.MapCodec<VSBlock> CODEC = simpleCodec(VSBlock::new);
+    @Override protected com.mojang.serialization.MapCodec<? extends BaseEntityBlock> codec() { return CODEC; }
+
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
 
     public VSBlock(Properties pProperties) {
@@ -36,12 +38,12 @@ public class VSBlock extends BaseEntityBlock {
     }
 
     @Override
-    public InteractionResult use(BlockState pState, Level pLevel, BlockPos pPos, Player pPlayer, InteractionHand pHand, BlockHitResult pHit) {
+    public InteractionResult useWithoutItem(BlockState pState, Level pLevel, BlockPos pPos, Player pPlayer, BlockHitResult pHit) {
         if (pLevel.isClientSide()) {
             return InteractionResult.SUCCESS;
         }
 
-        NetworkHooks.openScreen(((ServerPlayer) pPlayer), this.getMenuProvider(pState, pLevel, pPos), buffer -> buffer.writeBlockPos(pPos));
+        ((ServerPlayer) pPlayer).openMenu( this.getMenuProvider(pState, pLevel, pPos), buffer -> buffer.writeBlockPos(pPos));
         return InteractionResult.CONSUME;
     }
 
@@ -51,7 +53,7 @@ public class VSBlock extends BaseEntityBlock {
 
         if(be == null) return;
 
-        be.drops();
+        if (!pState.is(pNewState.getBlock())) be.drops();
         super.onRemove(pState, pLevel, pPos, pNewState, pMovedByPiston);
     }
 
@@ -66,7 +68,8 @@ public class VSBlock extends BaseEntityBlock {
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level pLevel, BlockState pState, BlockEntityType<T> pBlockEntityType) {
         if(pLevel.isClientSide) return null;
 
-        return ((level, blockPos, blockState, be) -> ((VSBlockEntity) be).tick());
+        return createTickerHelper(pBlockEntityType, com.leo.sanguine_networks.init.ModBlockEntities.V_SACRIFICER_BE.get(),
+            (level, blockPos, blockState, be) -> be.tick());
     }
 
     public BlockState rotate(BlockState pState, Rotation pRot) {

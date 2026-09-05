@@ -4,14 +4,14 @@ import com.leo.sanguine_networks.SanguineNeuralNetworks;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.data.PackOutput;
-import net.minecraftforge.common.data.ExistingFileHelper;
-import net.minecraftforge.data.event.GatherDataEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.common.data.ExistingFileHelper;
+import net.neoforged.neoforge.data.event.GatherDataEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 import java.util.concurrent.CompletableFuture;
 
-@Mod.EventBusSubscriber(modid = SanguineNeuralNetworks.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = SanguineNeuralNetworks.MODID, bus = EventBusSubscriber.Bus.MOD)
 public class DataGenerators {
     @SubscribeEvent
     public static void gatherData(GatherDataEvent event) {
@@ -23,10 +23,10 @@ public class DataGenerators {
         generator.addProvider(event.includeClient(), new ModBlockStateProvider(packOutput, existingFileHelper));
         generator.addProvider(event.includeClient(), new ModItemModelProvider(packOutput, existingFileHelper));
 
-        generator.addProvider(event.includeClient(), ModLootTableProvider.create(packOutput));
+        generator.addProvider(event.includeServer(), ModLootTableProvider.create(packOutput, provider));
 
-        generator.addProvider(event.includeClient(), new ModBlockTagGenerator(packOutput, provider, existingFileHelper));
-        generator.addProvider(event.includeClient(), new ModRecipeProvider(packOutput));
+        generator.addProvider(event.includeServer(), new ModBlockTagGenerator(packOutput, provider, existingFileHelper));
+        generator.addProvider(event.includeServer(), new ModRecipeProvider(packOutput, provider));
 
         generator.addProvider(event.includeClient(), new ModLanguageProvider(packOutput, "en_us"));
     }

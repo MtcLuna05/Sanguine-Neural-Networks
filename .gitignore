@@ -28,3 +28,6 @@ replay_pid*
 /run-data
 /run
 /src/generated/resources/.cache
+
+# The Gradle wrapper is part of the build, not a compiled mod artifact.
+!gradle/wrapper/gradle-wrapper.jar

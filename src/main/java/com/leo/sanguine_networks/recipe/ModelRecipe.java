@@ -1,198 +1,83 @@
 package com.leo.sanguine_networks.recipe;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.leo.sanguine_networks.SanguineNeuralNetworks;
 import com.leo.sanguine_networks.init.ModRecipes;
-import net.minecraft.advancements.CriterionTriggerInstance;
-import net.minecraft.core.RegistryAccess;
-import net.minecraft.data.recipes.FinishedRecipe;
-import net.minecraft.data.recipes.RecipeBuilder;
-import net.minecraft.network.FriendlyByteBuf;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.data.recipes.RecipeOutput;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.Container;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraft.world.item.crafting.Recipe;
-import net.minecraft.world.item.crafting.RecipeSerializer;
-import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.world.item.crafting.*;
 import net.minecraft.world.level.Level;
-import org.jetbrains.annotations.NotNull;
 
-import javax.annotation.Nullable;
-import java.util.List;
-import java.util.function.Consumer;
-
-public class ModelRecipe implements Recipe<Container> {
+public class ModelRecipe implements Recipe<RecipeInput> {
     private final ResourceLocation entity;
     private final int[] blood;
     private final int energy;
-    private final ResourceLocation id;
 
-    public ModelRecipe(ResourceLocation entity, int[] blood, int energy, ResourceLocation id) {
+    public ModelRecipe(ResourceLocation entity, int[] blood, int energy) {
         this.entity = entity;
         this.blood = blood;
         this.energy = energy;
-        this.id = id;
     }
+    public ResourceLocation getEntity() { return entity; }
+    public int[] getBlood() { return blood; }
+    public int getBlood(dev.shadowsoffire.hostilenetworks.data.ModelTier tier) {
+        int index = dev.shadowsoffire.hostilenetworks.data.ModelTierRegistry.getSortedTiers().indexOf(tier);
+        return blood[Math.clamp(index, 0, blood.length - 1)];
+    }
+    /** Extra HNN tiers continue above the last JSON tier, doubling each preceding increase. */
+    public int getExtraBlood(int extraTier) {
+        if (extraTier < 0) throw new IllegalArgumentException("Extra tier must be non-negative");
+        long previous = blood[blood.length - 2];
+        long current = blood[blood.length - 1];
+        for (int i = 0; i <= extraTier; i++) {
+            long next = Math.clamp(current + 2 * (current - previous), 0, Integer.MAX_VALUE);
+            previous = current;
+            current = next;
+            if (current == previous || current == Integer.MAX_VALUE) break;
+        }
+        return (int) current;
+    }
+    public int getEnergy() { return energy; }
 
-    public static ModelRecipe.Builder create(ResourceLocation entity, int[] blood, int energy) {
-        ResourceLocation recipeId = new ResourceLocation(SanguineNeuralNetworks.MODID, "blood/" + entity.getPath());
-        return new ModelRecipe.Builder(entity, blood, energy, recipeId);
+    public static Builder create(ResourceLocation entity, int[] blood, int energy) {
+        return new Builder(new ModelRecipe(entity, blood, energy), ResourceLocation.fromNamespaceAndPath(SanguineNeuralNetworks.MODID, "blood/" + entity.getPath()));
     }
-
-    public ResourceLocation getEntity() {
-        return entity;
+    public record Builder(ModelRecipe recipe, ResourceLocation id) {
+        public void save(RecipeOutput output) { output.accept(id, recipe, null); }
     }
-
-    public int[] getBlood() {
-        return blood;
-    }
-
-    public int getEnergy() {
-        return energy;
-    }
-
-    @Override
-    public boolean matches(Container pContainer, Level pLevel) {
-        return !pLevel.isClientSide();
-    }
-
-    @Override
-    public ItemStack assemble(Container pContainer, RegistryAccess pRegistryAccess) {
-        return ItemStack.EMPTY;
-    }
-
-    @Override
-    public boolean canCraftInDimensions(int pWidth, int pHeight) {
-        return true;
-    }
-
-    @Override
-    public ItemStack getResultItem(RegistryAccess pRegistryAccess) {
-        return ItemStack.EMPTY;
-    }
-
-    @Override
-    public ResourceLocation getId() {
-        return id;
-    }
-
-    @Override
-    public RecipeSerializer<?> getSerializer() {
-        return ModRecipes.BLOOD_RECIPE_SERIALIZER.get();
-    }
-
-    @Override
-    public RecipeType<?> getType() {
-        return Type.INSTANCE;
-    }
+    @Override public boolean matches(RecipeInput input, Level level) { return false; }
+    @Override public ItemStack assemble(RecipeInput input, HolderLookup.Provider registries) { return ItemStack.EMPTY; }
+    @Override public boolean canCraftInDimensions(int width, int height) { return true; }
+    @Override public ItemStack getResultItem(HolderLookup.Provider registries) { return ItemStack.EMPTY; }
+    @Override public boolean isSpecial() { return true; }
+    @Override public RecipeSerializer<?> getSerializer() { return ModRecipes.BLOOD_RECIPE_SERIALIZER.get(); }
+    @Override public RecipeType<?> getType() { return Type.INSTANCE; }
 
     public static class Type implements RecipeType<ModelRecipe> {
         public static final Type INSTANCE = new Type();
     }
-
     public static class Serializer implements RecipeSerializer<ModelRecipe> {
         public static final Serializer INSTANCE = new Serializer();
-
-        @Override
-        public ModelRecipe fromJson(ResourceLocation id, JsonObject recipe) {
-            ResourceLocation entity = new ResourceLocation(recipe.get("entity").getAsString());
-            int energy = recipe.get("energy").getAsInt();
-
-            List<JsonElement> bloodList = recipe.getAsJsonArray("blood").asList();
-            int[] blood = new int[bloodList.size()];
-            for (int i = 0; i < bloodList.size(); i++) {
-                blood[i] = bloodList.get(i).getAsInt();
-            }
-
-            return new ModelRecipe(entity, blood, energy, id);
-        }
-
-        @Override
-        public @Nullable ModelRecipe fromNetwork(ResourceLocation id, FriendlyByteBuf buffer) {
-            ResourceLocation entity = buffer.readResourceLocation();
-            int[] blood = buffer.readVarIntArray();
-            int energy = buffer.readInt();
-
-            return new ModelRecipe(entity, blood, energy, id);
-        }
-
-        @Override
-        public void toNetwork(FriendlyByteBuf pBuffer, ModelRecipe pRecipe) {
-            pBuffer.writeResourceLocation(pRecipe.entity);
-            pBuffer.writeVarIntArray(pRecipe.blood);
-            pBuffer.writeInt(pRecipe.energy);
-        }
-    }
-
-    public static class Builder implements RecipeBuilder, FinishedRecipe {
-        private final ResourceLocation entity;
-        private final int[] blood;
-        private final int energy;
-        private final ResourceLocation id;
-
-        public Builder(ResourceLocation entity, int[] blood, int energy, ResourceLocation id) {
-            this.entity = entity;
-            this.blood = blood;
-            this.energy = energy;
-            this.id = id;
-        }
-
-        @Override
-        public RecipeBuilder unlockedBy(String pCriterionName, CriterionTriggerInstance pCriterionTrigger) {
-            return this;
-        }
-
-        @Override
-        public RecipeBuilder group(@Nullable String pGroupName) {
-            return this;
-        }
-
-        @Override
-        public @NotNull Item getResult() {
-            return Items.AIR;
-        }
-
-        @Override
-        public void save(Consumer<FinishedRecipe> finishedRecipeConsumer, ResourceLocation recipeId) {
-            finishedRecipeConsumer.accept(this);
-        }
-
-        @Override
-        public void serializeRecipeData(JsonObject json) {
-            json.addProperty("entity", entity.toString());
-            JsonArray array = new JsonArray();
-            for (int i : blood) {
-                array.add(i);
-            }
-            json.add("blood",  array);
-            json.addProperty("energy", energy);
-        }
-
-        @Override
-        public @NotNull ResourceLocation getId() {
-            return this.id;
-        }
-
-        @Override
-        public @NotNull RecipeSerializer<?> getType() {
-            return ModRecipes.BLOOD_RECIPE_SERIALIZER.get();
-        }
-
-        @Nullable
-        @Override
-        public JsonObject serializeAdvancement() {
-            return null;
-        }
-
-        @Nullable
-        @Override
-        public ResourceLocation getAdvancementId() {
-            return null;
-        }
+        private static final MapCodec<ModelRecipe> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+            ResourceLocation.CODEC.fieldOf("entity").forGetter(ModelRecipe::getEntity),
+            Codec.INT.listOf().validate(values -> values.size() == 5 && values.stream().allMatch(v -> v >= 0)
+                ? DataResult.success(values) : DataResult.error(() -> "blood must contain five non-negative tier amounts"))
+                .xmap(values -> values.stream().mapToInt(Integer::intValue).toArray(), values -> java.util.Arrays.stream(values).boxed().toList())
+                .fieldOf("blood").forGetter(ModelRecipe::getBlood),
+            Codec.intRange(0, Integer.MAX_VALUE).fieldOf("energy").forGetter(ModelRecipe::getEnergy)
+        ).apply(instance, ModelRecipe::new));
+        private static final StreamCodec<RegistryFriendlyByteBuf, ModelRecipe> STREAM_CODEC = new StreamCodec<>() {
+            @Override public ModelRecipe decode(RegistryFriendlyByteBuf buffer) { return new ModelRecipe(buffer.readResourceLocation(), buffer.readVarIntArray(5), buffer.readInt()); }
+            @Override public void encode(RegistryFriendlyByteBuf buffer, ModelRecipe recipe) { buffer.writeResourceLocation(recipe.entity); buffer.writeVarIntArray(recipe.blood); buffer.writeInt(recipe.energy); }
+        };
+        @Override public MapCodec<ModelRecipe> codec() { return CODEC; }
+        @Override public StreamCodec<RegistryFriendlyByteBuf, ModelRecipe> streamCodec() { return STREAM_CODEC; }
     }
 }

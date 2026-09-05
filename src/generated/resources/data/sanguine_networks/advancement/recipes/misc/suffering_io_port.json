@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_sacrificer": {
+      "conditions": {
+        "items": [
+          {
+            "items": "sanguine_networks:virtual_sacrificer"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "sanguine_networks:suffering_io_port"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_sacrificer"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "sanguine_networks:suffering_io_port"
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "sanguine_networks:block/suffering_incorporated",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "sanguine_networks:block/suffering_incorporated"
+    },
+    "facing=south": {
+      "model": "sanguine_networks:block/suffering_incorporated",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "sanguine_networks:block/suffering_incorporated",
+      "y": 270
+    }
+  }
+}

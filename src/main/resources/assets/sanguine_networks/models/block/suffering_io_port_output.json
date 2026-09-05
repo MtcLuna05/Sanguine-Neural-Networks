@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "sanguine_networks:block/suffering_io_port_output"
+  }
+}

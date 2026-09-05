@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "B": {
+      "item": "neovitae:reagent_binding"
+    },
+    "C": {
+      "item": "minecraft:comparator"
+    },
+    "D": {
+      "item": "neovitae:rune_sacrifice"
+    },
+    "O": {
+      "item": "minecraft:obsidian"
+    },
+    "S": {
+      "item": "neovitae:tabula_animata"
+    }
+  },
+  "pattern": [
+    " D ",
+    "SOS",
+    "BCB"
+  ],
+  "result": {
+    "count": 1,
+    "id": "sanguine_networks:virtual_sacrificer"
+  }
+}

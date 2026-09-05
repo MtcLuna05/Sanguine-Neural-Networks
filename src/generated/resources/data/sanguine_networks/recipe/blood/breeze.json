@@ -1,0 +1,12 @@
+{
+  "type": "sanguine_networks:blood",
+  "blood": [
+    0,
+    125,
+    250,
+    375,
+    750
+  ],
+  "energy": 1000,
+  "entity": "minecraft:breeze"
+}

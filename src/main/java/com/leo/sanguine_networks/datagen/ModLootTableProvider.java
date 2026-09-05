@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.Set;
 
 public class ModLootTableProvider {
-    public static LootTableProvider create(PackOutput output) {
+    public static LootTableProvider create(PackOutput output, java.util.concurrent.CompletableFuture<net.minecraft.core.HolderLookup.Provider> registries) {
         return new LootTableProvider(output, Set.of(), List.of(
             new LootTableProvider.SubProviderEntry(ModBlockLootTables::new, LootContextParamSets.BLOCK)
-        ));
+        ), registries);
     }
 }

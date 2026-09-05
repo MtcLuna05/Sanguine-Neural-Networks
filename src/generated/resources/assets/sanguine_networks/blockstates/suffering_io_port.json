@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "mode=catalysts": {
+      "model": "sanguine_networks:block/suffering_io_port_catalysts"
+    },
+    "mode=energy": {
+      "model": "sanguine_networks:block/suffering_io_port_energy"
+    },
+    "mode=models": {
+      "model": "sanguine_networks:block/suffering_io_port_models"
+    },
+    "mode=output": {
+      "model": "sanguine_networks:block/suffering_io_port_output"
+    }
+  }
+}

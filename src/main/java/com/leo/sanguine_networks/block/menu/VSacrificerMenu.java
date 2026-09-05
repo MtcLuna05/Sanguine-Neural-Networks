@@ -4,7 +4,6 @@ import com.leo.sanguine_networks.block.entity.VSBlockEntity;
 import com.leo.sanguine_networks.init.ModBlocks;
 import com.leo.sanguine_networks.init.ModMenuTypes;
 import com.leo.sanguine_networks.recipe.CatalystRecipe;
-import com.leo.sanguine_networks.util.Pair;
 import dev.shadowsoffire.hostilenetworks.Hostile;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
@@ -13,11 +12,17 @@ import net.minecraft.world.inventory.*;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.items.SlotItemHandler;
+
+import net.neoforged.neoforge.items.SlotItemHandler;
 import org.jetbrains.annotations.NotNull;
 
 public class VSacrificerMenu extends AbstractContainerMenu {
+    public static final int MACHINE_PANEL_HEIGHT = 89;
+    public static final int PLAYER_PANEL_Y = MACHINE_PANEL_HEIGHT + 4;
+    public static final int PLAYER_INVENTORY_Y = PLAYER_PANEL_Y + 8;
+    public static final int PLAYER_HOTBAR_Y = PLAYER_INVENTORY_Y + 58;
+    public static final int SCREEN_HEIGHT = PLAYER_PANEL_Y + 90;
+
 
     public final VSBlockEntity be;
     private final Level level;
@@ -32,20 +37,21 @@ public class VSacrificerMenu extends AbstractContainerMenu {
         addPlayerInventory(inv);
         addPlayerHotbar(inv);
 
-        this.be.getCapability(ForgeCapabilities.ITEM_HANDLER).ifPresent(iItemHandler -> {
+        var iItemHandler = this.be.getInventory();
+        {
             this.addSlot(new SlotItemHandler(iItemHandler, 0, 17, 36) {
                 @Override
                 public boolean mayPlace(@NotNull ItemStack stack) {
-                    return stack.is(Hostile.Items.DATA_MODEL.get());
+                    return VSBlockEntity.acceptsModel(stack);
                 }
             });
             this.addSlot(new SlotItemHandler(iItemHandler, 1, 80, 64) {
                 @Override
                 public boolean mayPlace(@NotNull ItemStack stack) {
-                    return !iItemHandler.getStackInSlot(0).isEmpty() && level.getRecipeManager().getAllRecipesFor(CatalystRecipe.Type.INSTANCE).stream().anyMatch(r -> r.getInput().test(stack));
+                    return !iItemHandler.getStackInSlot(0).isEmpty() && level.getRecipeManager().getAllRecipesFor(CatalystRecipe.Type.INSTANCE).stream().anyMatch(r -> r.value().getInput().test(stack));
                 }
             });
-        });
+        }
 
         addDataSlots(data);
         this.data = data;
@@ -58,14 +64,14 @@ public class VSacrificerMenu extends AbstractContainerMenu {
     private void addPlayerInventory(Inventory playerInventory) {
         for (int i = 0; i < 3; ++i) {
             for (int l = 0; l < 9; ++l) {
-                this.addSlot(new Slot(playerInventory, l + i * 9 + 9, 8 + l * 18, 96 + i * 18));
+                this.addSlot(new Slot(playerInventory, l + i * 9 + 9, 8 + l * 18, PLAYER_INVENTORY_Y + i * 18));
             }
         }
     }
 
     private void addPlayerHotbar(Inventory playerInventory) {
         for (int i = 0; i < 9; ++i) {
-            this.addSlot(new Slot(playerInventory, i, 8 + i * 18, 154));
+            this.addSlot(new Slot(playerInventory, i, 8 + i * 18, PLAYER_HOTBAR_Y));
         }
     }
 

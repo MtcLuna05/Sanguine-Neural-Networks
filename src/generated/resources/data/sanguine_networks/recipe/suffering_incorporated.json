@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "G": {
+      "item": "neovitae:blood_stained_glass"
+    },
+    "R": {
+      "item": "neovitae:rune_blank"
+    },
+    "S": {
+      "item": "neovitae:tabula_spiritus"
+    },
+    "V": {
+      "item": "sanguine_networks:virtual_sacrificer"
+    }
+  },
+  "pattern": [
+    "RGR",
+    "VSV",
+    "RGR"
+  ],
+  "result": {
+    "count": 1,
+    "id": "sanguine_networks:suffering_incorporated"
+  }
+}
