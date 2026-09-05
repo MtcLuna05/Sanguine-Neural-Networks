@@ -29,6 +29,7 @@ public class WrenchItem extends Item {
     public InteractionResult useOn(UseOnContext pContext) {
         Level level = pContext.getLevel();
 
+        if (pContext.getPlayer() == null) return InteractionResult.PASS;
         if(level.isClientSide) {
             return InteractionResult.CONSUME;
         }
@@ -42,6 +43,7 @@ public class WrenchItem extends Item {
 
         if(be instanceof TileAltar) {
             tag.put("altar", NbtUtils.writeBlockPos(pos));
+            tag.putString("altarDimension", level.dimension().location().toString());
             player.displayClientMessage(
                 Component.translatable("item." + SanguineNeuralNetworks.MODID + ".savedAltar", pos.getX(), pos.getY(), pos.getZ()).withStyle(ChatFormatting.DARK_RED),
                 true
@@ -60,6 +62,11 @@ public class WrenchItem extends Item {
             }
 
             BlockPos altarPos = NbtUtils.readBlockPos(tag.getCompound("altar"));
+            if ((tag.contains("altarDimension") && !tag.getString("altarDimension").equals(level.dimension().location().toString()))
+                || !level.hasChunkAt(altarPos) || !(level.getBlockEntity(altarPos) instanceof TileAltar)) {
+                player.displayClientMessage(Component.translatable("item.sanguine_networks.unavailableAltar").withStyle(ChatFormatting.DARK_RED), true);
+                return InteractionResult.CONSUME;
+            }
             vs.setBloodAltar(altarPos);
             player.displayClientMessage(
                 Component.translatable("item." + SanguineNeuralNetworks.MODID + ".setSacrificer").withStyle(ChatFormatting.DARK_RED),

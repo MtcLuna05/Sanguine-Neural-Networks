@@ -19,6 +19,12 @@ import org.jetbrains.annotations.NotNull;
 
 public class VSacrificerMenu extends AbstractContainerMenu {
 
+    public static final int MACHINE_PANEL_HEIGHT = 89;
+    public static final int PLAYER_PANEL_Y = 93;
+    public static final int PLAYER_INVENTORY_Y = 101;
+    public static final int HOTBAR_Y = 159;
+    public static final int SCREEN_HEIGHT = 183;
+
     public final VSBlockEntity be;
     private final Level level;
     private final ContainerData data;
@@ -36,7 +42,7 @@ public class VSacrificerMenu extends AbstractContainerMenu {
             this.addSlot(new SlotItemHandler(iItemHandler, 0, 17, 36) {
                 @Override
                 public boolean mayPlace(@NotNull ItemStack stack) {
-                    return stack.is(Hostile.Items.DATA_MODEL.get());
+                    return VSBlockEntity.acceptsModel(stack);
                 }
             });
             this.addSlot(new SlotItemHandler(iItemHandler, 1, 80, 64) {
@@ -58,14 +64,14 @@ public class VSacrificerMenu extends AbstractContainerMenu {
     private void addPlayerInventory(Inventory playerInventory) {
         for (int i = 0; i < 3; ++i) {
             for (int l = 0; l < 9; ++l) {
-                this.addSlot(new Slot(playerInventory, l + i * 9 + 9, 8 + l * 18, 96 + i * 18));
+                this.addSlot(new Slot(playerInventory, l + i * 9 + 9, 8 + l * 18, PLAYER_INVENTORY_Y + i * 18));
             }
         }
     }
 
     private void addPlayerHotbar(Inventory playerInventory) {
         for (int i = 0; i < 9; ++i) {
-            this.addSlot(new Slot(playerInventory, i, 8 + i * 18, 154));
+            this.addSlot(new Slot(playerInventory, i, 8 + i * 18, HOTBAR_Y));
         }
     }
 

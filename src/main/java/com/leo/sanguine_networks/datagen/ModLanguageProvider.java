@@ -14,6 +14,13 @@ public class ModLanguageProvider extends LanguageProvider {
 
     @Override
     protected void addTranslations() {
+        add("jei.sanguine_networks.combined_models", "Virtual Sacrificer only: sums blood from all four inner models at the Extra HNN tier. Power: 10× the sum of their recipe costs. Consumes one catalyst use per completed cycle.");
+
+        this.add("jei.sanguine_networks.optional_catalyst", "Optional catalyst (blank = no bonus)");
+        this.add("jei.sanguine_networks.lp_conversion", "1 mB Life Essence = 1 LP");
+        this.add("jei.sanguine_networks.before_runes", "Before altar rune bonuses");
+        this.add("jei.sanguine_networks.catalyst_effect", "Multiplies blood production; amount depends on the model");
+        this.add("item.sanguine_networks.unavailableAltar", "Saved Blood Altar is missing, unloaded, or in another dimension");
         this.add(SanguineNeuralNetworks.MODID + ".itemGroup.main", "Sanguine Neural Networks");
 
         this.add(
@@ -31,27 +38,27 @@ public class ModLanguageProvider extends LanguageProvider {
 
         this.add(
             "gui." + SanguineNeuralNetworks.MODID + ".energy",
-            "Energy: %d / %d"
+            "Energy: %s / %s"
         );
 
         this.add(
             "gui." + SanguineNeuralNetworks.MODID + ".consume",
-            "Consuming: %d RF/t"
+            "Consuming: %s RF/t"
         );
 
         this.add(
             "gui." + SanguineNeuralNetworks.MODID + ".uses",
-            "Catalyst Uses: %d / %d"
+            "Catalyst Uses: %s / %s"
         );
 
         this.add(
             "gui." + SanguineNeuralNetworks.MODID + ".produce",
-            "Blood / Operation: %d mb"
+            "Blood / Operation: %s LP"
         );
 
         this.add(
             "gui." + SanguineNeuralNetworks.MODID + ".noAltar",
-            "Blood altar is missing!"
+            "Blood Altar is missing!"
         );
 
         this.add(
@@ -61,17 +68,17 @@ public class ModLanguageProvider extends LanguageProvider {
 
         this.add(
             "gui." + SanguineNeuralNetworks.MODID + ".cModifier",
-            "Mult: %dx"
+            "Mult: %sx"
         );
 
         this.add(
             "gui." + SanguineNeuralNetworks.MODID + ".aModifier",
-            "Altar: %dx"
+            "Altar: %sx"
         );
 
         this.add(
             "item." + SanguineNeuralNetworks.MODID + ".savedAltar",
-            "Saved Blood Altar Pos: %d x, %d y, %d z"
+            "Saved Blood Altar Pos: %s x, %s y, %s z"
         );
 
         this.add(
@@ -81,37 +88,37 @@ public class ModLanguageProvider extends LanguageProvider {
 
         this.add(
             "item." + SanguineNeuralNetworks.MODID + ".setSacrificer",
-            "Successfully saved blood altar in the virtual sacrificer"
+            "Successfully saved Blood Altar in the virtual sacrificer"
         );
 
         this.add(
             "item." + SanguineNeuralNetworks.MODID + ".invalidPos",
-            "Position is not a valid selection: %d x, %d y, %d z"
+            "Position is not a valid selection: %s x, %s y, %s z"
         );
 
         this.add(
             "item." + SanguineNeuralNetworks.MODID + ".wandUse",
-            "First shift r-click on the Blood Altar, then shift r-click on the Virtual Sacrificer"
+            "First shift r-click on the Blood Altar, then shift r-click on a Virtual Sacrificer"
         );
 
         this.add(
             "jei."+ SanguineNeuralNetworks.MODID + ".blood",
-            "Blood: %dmb"
+            "Blood: %s LP"
         );
 
         this.add(
             "jei."+ SanguineNeuralNetworks.MODID + ".energy",
-            "Energy: %dRF/t"
+            "Energy: %sRF/t"
         );
 
         this.add(
             "jei."+ SanguineNeuralNetworks.MODID + ".mult",
-            "Mult: %dx"
+            "Mult: %sx"
         );
 
         this.add(
             "jei."+ SanguineNeuralNetworks.MODID + ".uses",
-            "Uses: %d"
+            "Uses: %s"
         );
 
         this.add(
@@ -119,7 +126,6 @@ public class ModLanguageProvider extends LanguageProvider {
             "Virtual Sacrificer Catalysts"
         );
     }
-
 
     /**
      * Capitalizes first letter of a string

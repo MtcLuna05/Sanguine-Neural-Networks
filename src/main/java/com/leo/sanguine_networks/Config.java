@@ -29,6 +29,12 @@ public class Config {
         .define("faulty_data", true);
 
 
+    private static final ForgeConfigSpec.BooleanValue EXTRA_HNN_MODELS_ENABLED = BUILDER
+        .comment("Allow Extra HNN combined models in the Virtual Sacrificer [true]")
+        .define("extra_hnn_models_enabled", true);
+
+    public static boolean extraHnnModelsEnabled = true;
+
     static final ForgeConfigSpec SPEC = BUILDER.build();
 
     public static int sacrificerSpeed;
@@ -44,5 +50,6 @@ public class Config {
         sacrificerData = ITERATION_DATA.get();
 
         faultyData = FAULTY_DATA.get();
+        extraHnnModelsEnabled = EXTRA_HNN_MODELS_ENABLED.get();
     }
 }

@@ -1,23 +1,18 @@
 package com.leo.sanguine_networks.compat.jei;
 
-import com.leo.sanguine_networks.Config;
 import com.leo.sanguine_networks.SanguineNeuralNetworks;
 import com.leo.sanguine_networks.client.screen.VSacrificerScreen;
 import com.leo.sanguine_networks.init.ModBlocks;
 import com.leo.sanguine_networks.recipe.CatalystRecipe;
 import com.leo.sanguine_networks.recipe.ModelRecipe;
-import dev.shadowsoffire.hostilenetworks.Hostile;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.registration.IRecipeCatalystRegistration;
 import mezz.jei.api.registration.IRecipeCategoryRegistration;
 import mezz.jei.api.registration.IRecipeRegistration;
 import net.minecraft.client.Minecraft;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.ItemStack;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @mezz.jei.api.JeiPlugin
@@ -38,7 +33,14 @@ public class JeiPlugin implements IModPlugin {
 
     @Override
     public void registerRecipes(IRecipeRegistration registration) {
-        List<ModelRecipe> bloodRecipes = Minecraft.getInstance().level.getRecipeManager().getAllRecipesFor(ModelRecipe.Type.INSTANCE);
+        net.minecraft.core.registries.BuiltInRegistries.ITEM.getOptional(new ResourceLocation("extrahnn:extra_data_model"))
+            .ifPresent(item -> registration.addIngredientInfo(item.getDefaultInstance(), mezz.jei.api.constants.VanillaTypes.ITEM_STACK,
+                net.minecraft.network.chat.Component.translatable("jei.sanguine_networks.combined_models")));
+        List<ModelRecipe> bloodRecipes = Minecraft.getInstance().level.getRecipeManager().getAllRecipesFor(ModelRecipe.Type.INSTANCE).stream()
+            .filter(recipe -> net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getOptional(recipe.getEntity())
+                .map(entity -> dev.shadowsoffire.hostilenetworks.data.DataModelRegistry.INSTANCE.getForEntity(entity) != null)
+                .orElse(false))
+            .toList();
 
         registration.addRecipes(
             VirtualSacrificer.RECIPE_TYPE,
@@ -52,7 +54,6 @@ public class JeiPlugin implements IModPlugin {
             catalystRecipes
         );
     }
-
 
     @Override
     public void registerRecipeCatalysts(IRecipeCatalystRegistration registration) {

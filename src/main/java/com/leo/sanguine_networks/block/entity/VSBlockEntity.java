@@ -1,6 +1,7 @@
 package com.leo.sanguine_networks.block.entity;
 
 import com.leo.sanguine_networks.Config;
+import com.leo.sanguine_networks.compat.ExtraHnnCompat;
 import com.leo.sanguine_networks.SanguineNeuralNetworks;
 import com.leo.sanguine_networks.init.ModBlockEntities;
 import com.leo.sanguine_networks.block.menu.VSacrificerMenu;
@@ -52,13 +53,14 @@ public class VSBlockEntity extends BlockEntity implements MenuProvider {
     private final ItemStackHandler itemHandler = new ItemStackHandler(2){
         @Override
         protected void onContentsChanged(int slot) {
+            if (slot == 0) progress = 0;
             VSBlockEntity.this.sync();
         }
 
         @Override
         public boolean isItemValid(int slot, @NotNull ItemStack stack) {
             return switch(slot){
-                case 0 -> stack.getItem() instanceof DataModelItem;
+                case 0 -> acceptsModel(stack);
                 default -> true;
             };
 
@@ -235,7 +237,7 @@ public class VSBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     public void tick() {
-        if(altarPos != null && level.getBlockEntity(altarPos) instanceof TileAltar altar){
+        if(altarPos != null && level.hasChunkAt(altarPos) && level.getBlockEntity(altarPos) instanceof TileAltar altar){
             bloodAltar = altar;
         } else {
             bloodAltar = null;
@@ -243,30 +245,32 @@ public class VSBlockEntity extends BlockEntity implements MenuProvider {
 
         if(maxProgress != Config.sacrificerSpeed) maxProgress = Config.sacrificerSpeed;
 
-        boolean hasCatalyst = catalystUses > 0 || catalystUses == -1;
-
-        if(!getCatalystStack().isEmpty() && !hasCatalyst) {
-            maxCatalystUses = getCatalystFromStack(getCatalystStack()).second;
-            catalystMult = getCatalystFromStack(getCatalystStack()).first;
-            catalystUses = maxCatalystUses;
-            getCatalystStack().shrink(1);
-            sync();
-        }
-
-        missingModel = getModelStack().isEmpty() || (getModelFromStack(getModelStack()).first == 0 && getModelFromStack(getModelStack()).second == 0);
-
-        if(missingModel) {
+        var stats = getModelFromStack(getModelStack());
+        missingModel = stats.first == 0 && stats.second == 0;
+        if (missingModel) {
             progress = 0;
             toProduce = 0;
             sync();
             return;
         }
 
+        boolean hasCatalyst = catalystUses > 0 || catalystUses == -1;
+        if (!getCatalystStack().isEmpty() && !hasCatalyst) {
+            var catalyst = getCatalystFromStack(getCatalystStack());
+            if (catalyst.second > 0 || catalyst.second == -1) {
+                maxCatalystUses = catalyst.second;
+                catalystUses = maxCatalystUses;
+                catalystMult = catalyst.first;
+                getCatalystStack().shrink(1);
+                hasCatalyst = true;
+            }
+        }
+
         if (!hasCatalyst && (catalystUses <= 0 && catalystUses != -1)) {
             catalystMult = 1;
         }
 
-        toProduce = (int) (getModelFromStack(getModelStack()).first * catalystMult);
+        toProduce = (int) (stats.first * catalystMult);
 
         if(energyStorage.getEnergyStored() < getRFTick()) {
             sync();
@@ -281,7 +285,7 @@ public class VSBlockEntity extends BlockEntity implements MenuProvider {
         altarMultiplier = 1 + bloodAltar.getSacrificeMultiplier();
         toProduce = (int) (toProduce * altarMultiplier);
 
-        if(bloodAltar.getCurrentBlood() + toProduce >= bloodAltar.getCapacity()) {
+        if((long) bloodAltar.getCurrentBlood() + toProduce > bloodAltar.getCapacity()) {
             sync();
             return;
         }
@@ -294,13 +298,19 @@ public class VSBlockEntity extends BlockEntity implements MenuProvider {
             return;
         }
 
-        if(hasCatalyst && maxCatalystUses > 1) {
+        if(catalystUses > 0) {
             catalystUses--;
         }
 
         progress = 0;
 
         bloodAltar.fillMainTank(toProduce);
+
+        if (ExtraHnnCompat.isCombined(getModelStack())) {
+            ExtraHnnCompat.completeCycle(getModelStack());
+            sync();
+            return;
+        }
 
         int data = DataModelItem.getData(getModelStack());
 
@@ -317,7 +327,7 @@ public class VSBlockEntity extends BlockEntity implements MenuProvider {
 
     public void sync(){
         setChanged();
-        level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), Block.UPDATE_ALL);
+        if (level != null) level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), Block.UPDATE_ALL);
     }
 
     public Pair<Float, Integer> getCatalystFromStack(ItemStack stack){
@@ -339,30 +349,25 @@ public class VSBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     public Pair<Integer, Integer> getModelFromStack(ItemStack stack){
-        String mobId = stack.getOrCreateTagElement("data_model").getString("id");
-        List<ModelRecipe> recipes = level.getRecipeManager().getAllRecipesFor(ModelRecipe.Type.INSTANCE);
-
-        DynamicHolder<DataModel> model = DataModelItem.getStoredModel(stack);
-        ModelTier tier = ModelTier.getByData(model, DataModelItem.getData(stack));
-
-        for (ModelRecipe recipe : recipes) {
-            ItemStack modelStack = new ItemStack(Hostile.Items.DATA_MODEL.get());
-            EntityType<?> entityCheck = ForgeRegistries.ENTITY_TYPES.getValue(recipe.getEntity());
-
-            DataModel modelCheck = DataModelRegistry.INSTANCE.getForEntity(entityCheck);
-
-            if(modelCheck == null) continue;
-
-            DataModelItem.setStoredModel(modelStack, modelCheck);
-
-            String idCheck = modelStack.getOrCreateTagElement("data_model").getString("id");
-
-            if(idCheck.equalsIgnoreCase(mobId)) {
-                return Pair.of(recipe.getBlood()[tier.ordinal()], recipe.getEnergy());
+        if (level == null) return Pair.of(0, 0);
+        if (ExtraHnnCompat.isCombined(stack)) {
+            return Config.extraHnnModelsEnabled ? ExtraHnnCompat.getStats(stack, level) : Pair.of(0, 0);
+        }
+        if (!(stack.getItem() instanceof DataModelItem)) return Pair.of(0, 0);
+        var model = DataModelItem.getStoredModel(stack);
+        if (!model.isBound()) return Pair.of(0, 0);
+        var tier = ModelTier.getByData(model, DataModelItem.getData(stack));
+        for (var recipe : level.getRecipeManager().getAllRecipesFor(ModelRecipe.Type.INSTANCE)) {
+            var entity = ForgeRegistries.ENTITY_TYPES.getValue(recipe.getEntity());
+            if (entity != null && model.get().equals(DataModelRegistry.INSTANCE.getForEntity(entity))) {
+                return Pair.of(recipe.getBlood(tier), recipe.getEnergy());
             }
         }
-
         return Pair.of(0, 0);
+    }
+
+    public static boolean acceptsModel(ItemStack stack) {
+        return ExtraHnnCompat.isCombined(stack) ? Config.extraHnnModelsEnabled : stack.getItem() instanceof DataModelItem;
     }
 
     public ItemStack getCatalystStack(){
@@ -373,13 +378,16 @@ public class VSBlockEntity extends BlockEntity implements MenuProvider {
         return itemHandler;
     }
 
+    public ModifiableEnergyStorage getEnergyStorage() { return energyStorage; }
+
     public int getRFTick(){
         return getModelFromStack(getModelStack()).second;
     }
 
     public void setBloodAltar(BlockPos pos){
-        TileAltar altar = (TileAltar) level.getBlockEntity(pos);
+        if (level == null || !level.hasChunkAt(pos) || !(level.getBlockEntity(pos) instanceof TileAltar altar)) return;
         altarPos = pos;
         bloodAltar = altar;
+        sync();
     }
 }

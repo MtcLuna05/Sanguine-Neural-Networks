@@ -14,10 +14,11 @@ import java.util.Optional;
 
 public class VSacrificerScreen extends AbstractContainerScreen<VSacrificerMenu> {
 
-    public static ResourceLocation BACKGROUND = new ResourceLocation(SanguineNeuralNetworks.MODID, "textures/gui/virtual_sacrificer_bg.png");
+    public static final ResourceLocation BACKGROUND = new ResourceLocation(SanguineNeuralNetworks.MODID, "textures/gui/virtual_sacrificer_bg.png");
 
     public VSacrificerScreen(VSacrificerMenu pMenu, Inventory pPlayerInventory, Component pTitle) {
         super(pMenu, pPlayerInventory, pTitle);
+        imageHeight = VSacrificerMenu.SCREEN_HEIGHT;
     }
 
     @Override
@@ -40,10 +41,13 @@ public class VSacrificerScreen extends AbstractContainerScreen<VSacrificerMenu> 
             0,
             0,
             176,
-            178,
+            VSacrificerMenu.MACHINE_PANEL_HEIGHT,
             256,
             256
         );
+
+        guiGraphics.blit(new ResourceLocation("sanguine_networks:textures/gui/player_inventory.png"),
+            x, y + VSacrificerMenu.PLAYER_PANEL_Y, 0, 0, 176, 90, 256, 256);
 
         ItemStackHandler inventory = menu.getBlockEntity().getInventory();
 
@@ -76,7 +80,7 @@ public class VSacrificerScreen extends AbstractContainerScreen<VSacrificerMenu> 
         }
 
         int energy = menu.getData().get(0), maxEnergy = menu.getData().get(1);
-        int scaledEnergy = energy != 0 && maxEnergy != 0 ? energy * 71 / maxEnergy: 0;
+        int scaledEnergy = energy != 0 && maxEnergy != 0 ? (int) ((long) energy * 71 / maxEnergy): 0;
 
         guiGraphics.blit(
             BACKGROUND,
@@ -91,7 +95,7 @@ public class VSacrificerScreen extends AbstractContainerScreen<VSacrificerMenu> 
         );
 
         int progress = menu.getData().get(4), maxProgress = menu.getData().get(5);
-        int scaledProgress = progress != 0 && maxProgress != 0? progress * 111 / maxProgress: 0;
+        int scaledProgress = progress != 0 && maxProgress != 0? (int) ((long) progress * 111 / maxProgress): 0;
 
         guiGraphics.blit(
             BACKGROUND,
@@ -106,7 +110,7 @@ public class VSacrificerScreen extends AbstractContainerScreen<VSacrificerMenu> 
         );
 
         int uses = menu.getData().get(2), maxUses = menu.getData().get(3);
-        int scaledUses = uses != 0 && maxUses != 0? uses * 18 / maxUses: 0;
+        int scaledUses = uses != 0 && maxUses != 0? (int) ((long) uses * 18 / maxUses): 0;
 
         guiGraphics.fill(
             leftPos + 79,
@@ -180,7 +184,8 @@ public class VSacrificerScreen extends AbstractContainerScreen<VSacrificerMenu> 
             int uses = menu.getData().get(2), maxUses = menu.getData().get(3);
             pGuiGraphics.renderTooltip(
                 font,
-                Component.translatable("gui." + SanguineNeuralNetworks.MODID + ".uses", uses, maxUses),
+                uses == -1 ? Component.translatable("jei.sanguine_networks.uses", "∞")
+                    : Component.translatable("gui." + SanguineNeuralNetworks.MODID + ".uses", uses, maxUses),
                 pX,
                 pY
             );

@@ -57,8 +57,11 @@ public class CatalystRecipe implements Recipe<Container> {
     }
 
     @Override
+    public boolean isSpecial() { return true; }
+
+    @Override
     public boolean matches(Container pContainer, Level pLevel) {
-        return !pLevel.isClientSide();
+        return false;
     }
 
     @Override

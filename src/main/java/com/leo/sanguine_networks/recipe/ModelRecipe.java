@@ -33,6 +33,8 @@ public class ModelRecipe implements Recipe<Container> {
     private final ResourceLocation id;
 
     public ModelRecipe(ResourceLocation entity, int[] blood, int energy, ResourceLocation id) {
+        if (blood.length != 5 || java.util.Arrays.stream(blood).anyMatch(value -> value < 0) || energy < 0)
+            throw new IllegalArgumentException("Blood recipes require five non-negative tier amounts and non-negative energy");
         this.entity = entity;
         this.blood = blood;
         this.energy = energy;
@@ -52,13 +54,32 @@ public class ModelRecipe implements Recipe<Container> {
         return blood;
     }
 
+    public int getExtraBlood(int extraTier) {
+        if (extraTier < 0) throw new IllegalArgumentException("Extra tier must be non-negative");
+        long previous = blood[blood.length - 2];
+        long current = blood[blood.length - 1];
+        for (int i = 0; i <= extraTier; i++) {
+            long next = Math.max(0, Math.min(Integer.MAX_VALUE, current + 2 * (current - previous)));
+            previous = current;
+            current = next;
+            if (current == previous || current == Integer.MAX_VALUE) break;
+        }
+        return (int) current;
+    }
+    public int getBlood(dev.shadowsoffire.hostilenetworks.data.ModelTier tier) {
+        return blood[Math.min(tier.ordinal(), blood.length - 1)];
+    }
+
     public int getEnergy() {
         return energy;
     }
 
     @Override
+    public boolean isSpecial() { return true; }
+
+    @Override
     public boolean matches(Container pContainer, Level pLevel) {
-        return !pLevel.isClientSide();
+        return false;
     }
 
     @Override

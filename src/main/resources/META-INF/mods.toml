@@ -65,7 +65,7 @@ side = "BOTH"
 modId = "hostilenetworks"
 mandatory = true
 # This version range declares a minimum of the current minecraft version up to but not including the next major version
-versionRange = "[5.3.1, 6)"
+versionRange = "[5.3.3, 6)"
 ordering = "NONE"
 side = "BOTH"
 [[dependencies."${mod_id}"]]
@@ -75,3 +75,17 @@ mandatory = true
 versionRange = "[3.3.3-45, 4)"
 ordering = "NONE"
 side = "BOTH"
+
+[[dependencies.${mod_id}]]
+modId="extrahnn"
+mandatory=false
+versionRange="[1.2.2,)"
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="placebo"
+mandatory=true
+versionRange="[8.6.3,9)"
+ordering="NONE"
+side="BOTH"
