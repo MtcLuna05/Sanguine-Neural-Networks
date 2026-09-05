@@ -198,8 +198,7 @@ public class SufferingBlockEntity extends BlockEntity implements MenuProvider {
         modelRecipes.clear();
         for (var holder : level.getRecipeManager().getAllRecipesFor(ModelRecipe.Type.INSTANCE)) {
             var recipe = holder.value();
-            BuiltInRegistries.ENTITY_TYPE.getOptional(recipe.getEntity()).ifPresent(entity ->
-                DataModelRegistry.INSTANCE.getForEntity(entity).forEach(model -> modelRecipes.putIfAbsent(model, recipe)));
+            recipe.getModels().forEach(model -> modelRecipes.putIfAbsent(model, recipe));
         }
         sync();
     }

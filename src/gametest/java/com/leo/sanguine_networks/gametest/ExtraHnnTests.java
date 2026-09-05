@@ -51,7 +51,29 @@ public class ExtraHnnTests {
     private static ModelRecipe recipe(GameTestHelper h, String name) {
         return h.getLevel().getRecipeManager().getAllRecipesFor(ModelRecipe.Type.INSTANCE).stream()
             .map(net.minecraft.world.item.crafting.RecipeHolder::value)
-            .filter(r -> r.getEntity().equals(ResourceLocation.withDefaultNamespace(name))).findFirst().orElseThrow();
+            .filter(r -> ResourceLocation.withDefaultNamespace(name).equals(r.getEntity())).findFirst().orElseThrow();
+    }
+
+    @GameTest(template = "test_empty")
+    public static void combinedBlockAndEntityModels(GameTestHelper h) {
+        if (!dev.shadowsoffire.hostilenetworks.HostileConfig.enableBlockDataModels) { h.succeed(); return; }
+        var f = fixture(h);
+        var stack = new ItemStack(ExtraHostile.Items.EXTRA_DATA_MODEL);
+        var iron = DataModelRegistry.INSTANCE.getForBlock(net.minecraft.world.level.block.Blocks.IRON_ORE).iterator().next();
+        var blaze = DataModelRegistry.INSTANCE.getForEntity(EntityType.BLAZE).iterator().next();
+        ExtraDataModelItem.setStoredModel(stack, List.of(iron, blaze, iron, blaze));
+        var stats = f.machine.getModelFromStack(stack);
+        h.assertTrue(stats.first == 3120 && stats.second == 24000, "Combined block and entity models sum tier blood and ten times recipe power");
+        int oldSpeed = Config.sacrificerSpeed;
+        try {
+            Config.sacrificerSpeed = 1;
+            f.machine.getInventory().setStackInSlot(0, stack);
+            f.machine.getInventory().setStackInSlot(1, new ItemStack(Hostile.Items.OVERWORLD_PREDICTION));
+            f.machine.tick();
+            h.assertTrue(f.altar.getCurrentBlood() == 4680 && f.machine.saveWithoutMetadata(h.getLevel().registryAccess()).getInt("catalystUses") == 9,
+                "Mixed combined cycle produces blood and consumes only one catalyst use");
+        } finally { Config.sacrificerSpeed = oldSpeed; }
+        h.succeed();
     }
 
     @GameTest(template = "test_empty")

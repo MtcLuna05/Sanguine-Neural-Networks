@@ -1,0 +1,12 @@
+{
+  "type": "sanguine_networks:blood",
+  "block": "minecraft:iron_ore",
+  "blood": [
+    0,
+    10,
+    20,
+    30,
+    40
+  ],
+  "energy": 200
+}

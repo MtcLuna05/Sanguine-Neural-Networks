@@ -68,4 +68,5 @@ if (project.hasProperty('gameTests')) {
 tasks.named('jar') {
     exclude 'com/leo/sanguine_networks/gametest/**'
     exclude 'data/sanguine_networks/structure/test_*.nbt'
+    exclude 'data/sanguine_networks/recipe/test_*.json'
 }

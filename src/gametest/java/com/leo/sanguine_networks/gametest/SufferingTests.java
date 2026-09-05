@@ -65,6 +65,17 @@ public class SufferingTests {
     private static int fluid(Fixture f) { return f.machine.getFluidHandler().getFluidInTank(0).getAmount(); }
 
     @GameTest(template = "test_suffering")
+    public static void blockModelsInMultiblock(GameTestHelper h) {
+        if (!dev.shadowsoffire.hostilenetworks.HostileConfig.enableBlockDataModels) { h.succeed(); return; }
+        var f = fixture(h);
+        var stack = BlockModelTests.ironModel();
+        h.assertTrue(f.machine.getInventory().insertItem(0, stack, false).isEmpty(), "Block model enters through multiblock inventory");
+        for (int i = 0; i < Config.sufferingSpeed; i++) f.machine.tick();
+        h.assertTrue(fluid(f) == 40, "Self-aware block model produces configured EV in the multiblock");
+        h.succeed();
+    }
+
+    @GameTest(template = "test_suffering")
     public static void multiblockConfigToggle(GameTestHelper h) {
         boolean old = Config.sufferingEnabled;
         int oldSpeed = Config.sufferingSpeed;

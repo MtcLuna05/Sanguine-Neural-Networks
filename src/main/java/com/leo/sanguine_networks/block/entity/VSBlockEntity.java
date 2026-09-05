@@ -308,10 +308,7 @@ public class VSBlockEntity extends BlockEntity implements MenuProvider {
         ModelTier tier = ModelTierRegistry.getByData(model.get(), DataModelItem.getData(stack));
         for (var holder : level.getRecipeManager().getAllRecipesFor(ModelRecipe.Type.INSTANCE)) {
             ModelRecipe recipe = holder.value();
-            var entity = BuiltInRegistries.ENTITY_TYPE.getOptional(recipe.getEntity());
-            if (entity.isEmpty()) continue;
-            var candidates = DataModelRegistry.INSTANCE.getForEntity(entity.get());
-            if (candidates.contains(model.get())) {
+            if (recipe.matchesModel(model.get())) {
                 return Pair.of(recipe.getBlood(tier), recipe.getEnergy());
             }
         }

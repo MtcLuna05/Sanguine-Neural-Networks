@@ -57,9 +57,7 @@ public class VirtualSacrificer implements IRecipeCategory<ModelRecipe> {
 
     @Override
     public void setRecipe(IRecipeLayoutBuilder builder, ModelRecipe recipe, IFocusGroup focuses) {
-        var entity = BuiltInRegistries.ENTITY_TYPE.getOptional(recipe.getEntity());
-        if (entity.isEmpty()) return;
-        var models = DataModelRegistry.INSTANCE.getForEntity(entity.get()).stream().map(model -> {
+        var models = recipe.getModels().stream().map(model -> {
             var stack = new ItemStack(Hostile.Items.DATA_MODEL);
             DataModelItem.setStoredModel(stack, model);
             return stack;

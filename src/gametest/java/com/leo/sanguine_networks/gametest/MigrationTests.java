@@ -125,7 +125,7 @@ public class MigrationTests {
 
     @GameTest(template = "test_empty")
     public static void recipeCodecs(GameTestHelper helper) {
-        var recipe = helper.getLevel().getRecipeManager().getAllRecipesFor(ModelRecipe.Type.INSTANCE).getFirst().value();
+        var recipe = helper.getLevel().getRecipeManager().getAllRecipesFor(ModelRecipe.Type.INSTANCE).stream().map(net.minecraft.world.item.crafting.RecipeHolder::value).filter(r -> !r.isBlockRecipe()).findFirst().orElseThrow();
         var serializer = ModelRecipe.Serializer.INSTANCE;
         var json = serializer.codec().codec().encodeStart(com.mojang.serialization.JsonOps.INSTANCE, recipe).getOrThrow();
         var decoded = serializer.codec().codec().parse(com.mojang.serialization.JsonOps.INSTANCE, json).getOrThrow();

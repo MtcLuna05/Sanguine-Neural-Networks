@@ -50,8 +50,7 @@ public final class ExtraHnnCompat {
         private static ModelRecipe recipeFor(DataModel model, Level level) {
             for (var holder : level.getRecipeManager().getAllRecipesFor(ModelRecipe.Type.INSTANCE)) {
                 var recipe = holder.value();
-                var entity = BuiltInRegistries.ENTITY_TYPE.getOptional(recipe.getEntity());
-                if (entity.isPresent() && DataModelRegistry.INSTANCE.getForEntity(entity.get()).contains(model)) return recipe;
+                if (recipe.matchesModel(model)) return recipe;
             }
             return null;
         }

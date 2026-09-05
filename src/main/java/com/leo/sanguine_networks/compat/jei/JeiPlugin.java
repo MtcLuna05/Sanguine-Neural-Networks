@@ -49,9 +49,7 @@ public class JeiPlugin implements IModPlugin {
             net.minecraft.network.chat.Component.translatable("sanguine_networks.suffering.output"));
         List<ModelRecipe> bloodRecipes = Minecraft.getInstance().level.getRecipeManager().getAllRecipesFor(ModelRecipe.Type.INSTANCE).stream()
             .map(net.minecraft.world.item.crafting.RecipeHolder::value)
-            .filter(recipe -> net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getOptional(recipe.getEntity())
-                .map(entity -> !dev.shadowsoffire.hostilenetworks.data.DataModelRegistry.INSTANCE.getForEntity(entity).isEmpty())
-                .orElse(false))
+            .filter(recipe -> !recipe.getModels().isEmpty())
             .toList();
 
         registration.addRecipes(

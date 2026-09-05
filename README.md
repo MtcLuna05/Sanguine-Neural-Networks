@@ -68,3 +68,22 @@ The runtime tests cover EV production with catalyst/rune bonuses, FE and item ca
 Recipes now live under `data/<namespace>/recipe/`, with corresponding singular `advancement`, `loot_table`, and `tags/block` directories. The custom `blood` and `catalyst` recipe IDs and JSON fields are retained. Blood recipes require five non-negative amounts, ordered from the lowest HNN tier upward; extra custom tiers use the final amount. The wrench crafting recipe is now `sanguine_networks:wrench`.
 
 This is a code port; no automatic conversion of Blood Magic blocks or old 1.20.1 item NBT is provided.
+
+## Block data models (1.21.1)
+
+HNN's `Enable Block Data Models` option in `config/hostilenetworks.cfg` controls loading its built-in block models. Enable it and restart or reload data. SNN resolves models from HNN's synchronized registry, so client config differences do not hide server-enabled models.
+
+Custom blood recipes can target a block instead of an entity. For example, put this in `data/<namespace>/recipe/blood/iron_ore.json`:
+
+```json
+{
+  "type": "sanguine_networks:blood",
+  "block": "minecraft:iron_ore",
+  "blood": [0, 10, 20, 30, 40],
+  "energy": 200
+}
+```
+
+These amounts are an example, not a bundled ore balance. Specify exactly one of `block` or `entity`. HNN block variants are recognized. Block models work in the Virtual Sacrificer and JEI, and Self-Aware block models work in Suffering Incorporated. Extra HNN combined models may contain block models and still use ten times the summed power cost and one catalyst use per combined cycle; combined models remain excluded from the multiblock.
+
+The Forge 1.20.1 branch uses HNN 5.3.3, whose models support entities only.
