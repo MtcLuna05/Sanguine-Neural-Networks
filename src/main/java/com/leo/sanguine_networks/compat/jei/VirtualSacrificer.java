@@ -67,13 +67,16 @@ public class VirtualSacrificer implements IRecipeCategory<ModelRecipe> {
         builder.addSlot(RecipeIngredientRole.INPUT, 4, 4).setSlotName("model").addItemStacks(models);
 
         List<ItemStack> catalysts = new ArrayList<>();
-        catalysts.add(null); // A blank cycle shows the unboosted recipe: catalysts are optional.
         for (var holder : Minecraft.getInstance().level.getRecipeManager().getAllRecipesFor(CatalystRecipe.Type.INSTANCE)) {
             catalysts.addAll(List.of(holder.getInput().getItems()));
         }
-        builder.addSlot(RecipeIngredientRole.CATALYST, 28, 4).setSlotName("catalyst")
-            .addTooltipCallback((slot, tooltip) -> tooltip.add(Component.translatable("jei.sanguine_networks.optional_catalyst")))
-            .addItemStacks(catalysts);
+
+        if(!catalysts.isEmpty()) {
+            builder.addSlot(RecipeIngredientRole.CATALYST, 28, 4).setSlotName("catalyst")
+                    .addTooltipCallback((slot, tooltip) -> tooltip.add(Component.translatable("jei.sanguine_networks.optional_catalyst")))
+                    .addItemStacks(catalysts);
+        }
+
         builder.addSlot(RecipeIngredientRole.OUTPUT, 96, 4).setSlotName("blood")
             .setFluidRenderer(1, false, 16, 16)
             .addTooltipCallback((slot, tooltip) -> {
@@ -82,7 +85,7 @@ public class VirtualSacrificer implements IRecipeCategory<ModelRecipe> {
                 tooltip.add(Component.translatable("jei.sanguine_networks.energy", recipe.getEnergy()));
             })
             .addFluidStack(BloodMagicFluids.LIFE_ESSENCE_FLUID.get(), Math.max(1, recipe.getBlood(ModelTier.SELF_AWARE)));
-        // The lower HNN slot identifies the receiving altar, not a second product.
+
         builder.addSlot(RecipeIngredientRole.CATALYST, 66, 26).addItemLike(net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(new ResourceLocation("bloodmagic:altar")));
     }
 
@@ -112,7 +115,6 @@ public class VirtualSacrificer implements IRecipeCategory<ModelRecipe> {
         for (var slot : slots) {
             switch (slot.getSlotName().orElse("")) {
                 case "model" -> {
-                    // Clear the override before reading, preserving JEI's focused model/variant.
                     slot.clearDisplayOverrides();
                     slot.getDisplayedItemStack().ifPresent(original -> {
                         ItemStack stack = original.copy();
@@ -134,10 +136,9 @@ public class VirtualSacrificer implements IRecipeCategory<ModelRecipe> {
     @Override
     public void draw(ModelRecipe recipe, IRecipeSlotsView slots, GuiGraphics graphics, double mouseX, double mouseY) {
         HnnJeiStyle.drawProgress(graphics);
-        // Keep both the visible model's components and the fluid tooltip in sync at HNN's 50-tick cadence.
         updateDisplay(recipe, slots.getSlotViews().stream().filter(IRecipeSlotDrawable.class::isInstance).map(IRecipeSlotDrawable.class::cast).toList());
         var font = Minecraft.getInstance().font;
-        Component tier = displayedTier().getComponent().copy().withStyle(style -> style.withColor(HnnJeiStyle.RED));
-        graphics.drawString(font, tier, 33 - font.width(tier) / 2, 30, HnnJeiStyle.RED);
+        Component tier = displayedTier().getComponent().copy();
+        graphics.drawString(font, tier, 33 - font.width(tier) / 2, 30, 0xFFFFFFFF);
     }
 }
