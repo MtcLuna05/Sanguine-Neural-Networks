@@ -1,9 +1,9 @@
-package com.leo.sanguine_networks.gametest;
+package com.luna.sanguine_networks.gametest;
 
-import com.leo.sanguine_networks.Config;
-import com.leo.sanguine_networks.block.entity.VSBlockEntity;
-import com.leo.sanguine_networks.init.ModBlocks;
-import com.leo.sanguine_networks.recipe.ModelRecipe;
+import com.luna.sanguine_networks.Config;
+import com.luna.sanguine_networks.block.entity.VSBlockEntity;
+import com.luna.sanguine_networks.init.ModBlocks;
+import com.luna.sanguine_networks.recipe.ModelRecipe;
 import dev.shadowsoffire.hostilenetworks.Hostile;
 import dev.shadowsoffire.hostilenetworks.HostileConfig;
 import dev.shadowsoffire.hostilenetworks.data.DataModelRegistry;

@@ -1,15 +1,15 @@
-package com.leo.sanguine_networks.gametest;
+package com.luna.sanguine_networks.gametest;
 
 import com.breakinblocks.neovitae.common.block.NVBlocks;
 import com.breakinblocks.neovitae.common.blockentity.AraVitaeTile;
-import com.leo.sanguine_networks.Config;
-import com.leo.sanguine_networks.block.SufferingBlock;
-import com.leo.sanguine_networks.block.SufferingIOPortBlock;
-import com.leo.sanguine_networks.block.SufferingIOPortBlock.Mode;
-import com.leo.sanguine_networks.block.entity.SufferingBlockEntity;
-import com.leo.sanguine_networks.block.entity.SufferingIOPortBlockEntity;
-import com.leo.sanguine_networks.init.ModBlocks;
-import com.leo.sanguine_networks.init.ModItems;
+import com.luna.sanguine_networks.Config;
+import com.luna.sanguine_networks.block.SufferingBlock;
+import com.luna.sanguine_networks.block.SufferingIOPortBlock;
+import com.luna.sanguine_networks.block.SufferingIOPortBlock.Mode;
+import com.luna.sanguine_networks.block.entity.SufferingBlockEntity;
+import com.luna.sanguine_networks.block.entity.SufferingIOPortBlockEntity;
+import com.luna.sanguine_networks.init.ModBlocks;
+import com.luna.sanguine_networks.init.ModItems;
 import dev.shadowsoffire.hostilenetworks.Hostile;
 import dev.shadowsoffire.hostilenetworks.data.DataModelRegistry;
 import dev.shadowsoffire.hostilenetworks.data.ModelTierRegistry;
@@ -140,7 +140,7 @@ public class SufferingTests {
             h.assertTrue(f.machine.getActiveSlotsMask() == 1, "Running model immediately activates HNN hologram");
             var player = net.neoforged.neoforge.common.util.FakePlayerFactory.getMinecraft(h.getLevel());
             player.setPos(f.machine.getBlockPos().getX() + 0.5, f.machine.getBlockPos().getY(), f.machine.getBlockPos().getZ() - 1);
-            var menu = (com.leo.sanguine_networks.block.menu.SufferingMenu) f.machine.createMenu(0, player.getInventory(), player);
+            var menu = (com.luna.sanguine_networks.block.menu.SufferingMenu) f.machine.createMenu(0, player.getInventory(), player);
             h.assertTrue(menu.slots.get(25).x == 132 && menu.slots.get(25).y == 20
                 && menu.slots.get(29).x == 35 && menu.slots.get(29).y == 140, "Input and player slots match HNN texture");
             h.assertTrue(!menu.clickMenuButton(player, 1999) && !menu.clickMenuButton(player, 2003), "Reject invalid button IDs");

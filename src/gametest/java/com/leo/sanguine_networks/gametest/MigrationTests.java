@@ -1,11 +1,11 @@
-package com.leo.sanguine_networks.gametest;
+package com.luna.sanguine_networks.gametest;
 
 import com.breakinblocks.neovitae.api.altar.rune.RuneInstance;
 import com.breakinblocks.neovitae.common.blockentity.AraVitaeTile;
-import com.leo.sanguine_networks.Config;
-import com.leo.sanguine_networks.block.entity.VSBlockEntity;
-import com.leo.sanguine_networks.init.ModBlocks;
-import com.leo.sanguine_networks.recipe.ModelRecipe;
+import com.luna.sanguine_networks.Config;
+import com.luna.sanguine_networks.block.entity.VSBlockEntity;
+import com.luna.sanguine_networks.init.ModBlocks;
+import com.luna.sanguine_networks.recipe.ModelRecipe;
 import dev.shadowsoffire.hostilenetworks.Hostile;
 import dev.shadowsoffire.hostilenetworks.data.DataModelRegistry;
 import dev.shadowsoffire.hostilenetworks.data.ModelTierRegistry;
@@ -101,7 +101,7 @@ public class MigrationTests {
     public static void wrenchLinksAndRejectsMissingAltar(GameTestHelper helper) {
         var f = fixture(helper);
         var player = net.neoforged.neoforge.common.util.FakePlayerFactory.getMinecraft(helper.getLevel());
-        var wrench = new ItemStack(com.leo.sanguine_networks.init.ModItems.WRENCH.get());
+        var wrench = new ItemStack(com.luna.sanguine_networks.init.ModItems.WRENCH.get());
         player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, wrench);
         var item = wrench.getItem();
         var altarHit = new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atCenterOf(f.altar.getBlockPos()), Direction.UP, f.altar.getBlockPos(), false);
