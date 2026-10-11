@@ -1,8 +1,0 @@
-{
-  "type": "sanguine_networks:catalyst",
-  "catalyst": {
-    "item": "minecraft:barrier"
-  },
-  "multiplier": 5.0,
-  "uses": -1
-}

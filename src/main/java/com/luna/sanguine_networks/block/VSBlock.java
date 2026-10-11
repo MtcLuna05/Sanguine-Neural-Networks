@@ -2,6 +2,7 @@ package com.luna.sanguine_networks.block;
 
 import com.luna.sanguine_networks.block.entity.VSBlockEntity;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -14,7 +15,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.BlockHitResult;
 
 import org.jetbrains.annotations.Nullable;
@@ -23,7 +24,7 @@ public class VSBlock extends BaseEntityBlock {
     public static final com.mojang.serialization.MapCodec<VSBlock> CODEC = simpleCodec(VSBlock::new);
     @Override protected com.mojang.serialization.MapCodec<? extends BaseEntityBlock> codec() { return CODEC; }
 
-    public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+	public static final EnumProperty<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
 
     public VSBlock(Properties pProperties) {
         super(pProperties);
@@ -47,15 +48,7 @@ public class VSBlock extends BaseEntityBlock {
         return InteractionResult.CONSUME;
     }
 
-    @Override
-    public void onRemove(BlockState pState, Level pLevel, BlockPos pPos, BlockState pNewState, boolean pMovedByPiston) {
-        VSBlockEntity be = ((VSBlockEntity) pLevel.getBlockEntity(pPos));
 
-        if(be == null) return;
-
-        if (!pState.is(pNewState.getBlock())) be.drops();
-        super.onRemove(pState, pLevel, pPos, pNewState, pMovedByPiston);
-    }
 
     @Nullable
     @Override
@@ -66,7 +59,7 @@ public class VSBlock extends BaseEntityBlock {
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level pLevel, BlockState pState, BlockEntityType<T> pBlockEntityType) {
-        if(pLevel.isClientSide) return null;
+	    if (pLevel.isClientSide()) return null;
 
         return createTickerHelper(pBlockEntityType, com.luna.sanguine_networks.init.ModBlockEntities.V_SACRIFICER_BE.get(),
             (level, blockPos, blockState, be) -> be.tick());
@@ -77,7 +70,7 @@ public class VSBlock extends BaseEntityBlock {
     }
 
     public BlockState mirror(BlockState pState, Mirror pMirror) {
-        return pState.rotate(pMirror.getRotation(pState.getValue(FACING)));
+	    return rotate(pState, pMirror.getRotation(pState.getValue(FACING)));
     }
 
     @Override

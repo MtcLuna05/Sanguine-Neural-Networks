@@ -6,7 +6,7 @@ import dev.shadowsoffire.hostilenetworks.multiblock.DataCenterShell;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -14,7 +14,7 @@ import net.minecraft.world.level.block.state.BlockState;
 
 /** Uses HNN's shell geometry, but never reads or applies altar rune modifiers. */
 public final class SufferingShell {
-    public static final TagKey<Block> RUNES = TagKey.create(Registries.BLOCK, ResourceLocation.parse("neovitae:altar/runes"));
+	public static final TagKey<Block> RUNES = TagKey.create(Registries.BLOCK, Identifier.parse("neovitae:altar/runes"));
     public static final int SIZE = DataCenterShell.SHELL_SIZE;
 
     private SufferingShell() {}
@@ -42,7 +42,7 @@ public final class SufferingShell {
 
     public static boolean validate(DataCenterShell.Layout layout, Level level) {
         return !layout.forEachCellUntil((pos, kind) -> {
-            if (!level.hasChunkAt(pos)) return true;
+	        if (!level.isLoaded(pos)) return true;
             BlockState state = level.getBlockState(pos);
             return switch (kind) {
                 case FLOOR -> !state.is(NVBlocks.RUNE_BLANK.block().get()) && !state.is(RUNES);

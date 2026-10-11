@@ -18,20 +18,20 @@ import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
 import mezz.jei.api.helpers.IGuiHelper;
 import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.RecipeIngredientRole;
-import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.recipe.category.IRecipeCategory;
+import mezz.jei.api.recipe.types.IRecipeType;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class VirtualSacrificer implements IRecipeCategory<ModelRecipe> {
-    public static final ResourceLocation UID = ResourceLocation.fromNamespaceAndPath(SanguineNeuralNetworks.MODID, "virtual_sacrificer/recipe");
-    public static final RecipeType<ModelRecipe> RECIPE_TYPE = new RecipeType<>(UID, ModelRecipe.class);
+	public static final Identifier UID = Identifier.fromNamespaceAndPath(SanguineNeuralNetworks.MODID, "virtual_sacrificer/recipe");
+	public static final IRecipeType<ModelRecipe> RECIPE_TYPE = IRecipeType.create(UID, ModelRecipe.class);
     private final IDrawable background;
     private final IDrawable icon;
     private final java.util.Map<IRecipeSlotDrawable, Long> displayedFrames = new java.util.WeakHashMap<>();
@@ -41,7 +41,10 @@ public class VirtualSacrificer implements IRecipeCategory<ModelRecipe> {
         icon = helper.createDrawableIngredient(VanillaTypes.ITEM_STACK, new ItemStack(ModBlocks.VIRTUAL_SACRIFICER.get()));
     }
 
-    @Override public RecipeType<ModelRecipe> getRecipeType() { return RECIPE_TYPE; }
+	@Override
+	public IRecipeType<ModelRecipe> getRecipeType() {
+		return RECIPE_TYPE;
+	}
     @Override public Component getTitle() { return Component.translatable("sanguine_networks.container.virtual_sacrificer"); }
     @Override public int getWidth() { return background.getWidth(); }
     @Override public int getHeight() { return background.getHeight(); }
@@ -64,10 +67,10 @@ public class VirtualSacrificer implements IRecipeCategory<ModelRecipe> {
 
         List<ItemStack> catalysts = new ArrayList<>();
         catalysts.add(ItemStack.EMPTY);
-        for (var holder : Minecraft.getInstance().level.getRecipeManager().getAllRecipesFor(CatalystRecipe.Type.INSTANCE)) {
-            catalysts.addAll(List.of(holder.value().getInput().getItems()));
+	    for (var holder : com.luna.sanguine_networks.init.ModRecipes.getRecipes(Minecraft.getInstance().level, CatalystRecipe.Type.INSTANCE)) {
+		    catalysts.addAll(holder.value().getInput().display().resolveForStacks(net.minecraft.world.item.crafting.display.SlotDisplayContext.fromLevel(Minecraft.getInstance().level)));
         }
-        builder.addSlot(RecipeIngredientRole.CATALYST, 28, 4).setSlotName("catalyst")
+	    builder.addSlot(RecipeIngredientRole.CRAFTING_STATION, 28, 4).setSlotName("catalyst")
             .addRichTooltipCallback((slot, tooltip) -> tooltip.add(Component.translatable("jei.sanguine_networks.optional_catalyst")))
             .addItemStacks(catalysts);
         builder.addSlot(RecipeIngredientRole.OUTPUT, 96, 4).setSlotName("blood")
@@ -77,8 +80,8 @@ public class VirtualSacrificer implements IRecipeCategory<ModelRecipe> {
                 tooltip.add(Component.translatable("jei.sanguine_networks.before_runes"));
                 tooltip.add(Component.translatable("jei.sanguine_networks.energy", recipe.getEnergy()));
             })
-            .addFluidStack(NVFluids.ESSENTIA_VITAE_SOURCE.get(), Math.max(1, recipe.getBlood(ModelTierRegistry.getMaxTier())));
-        builder.addSlot(RecipeIngredientRole.CATALYST, 66, 26).addItemLike(NVBlocks.ARA_VITAE);
+		        .add(NVFluids.ESSENTIA_VITAE_SOURCE.get(), Math.max(1, recipe.getBlood(ModelTierRegistry.getMaxTier())));
+	    builder.addSlot(RecipeIngredientRole.CRAFTING_STATION, 66, 26).add(NVBlocks.ARA_VITAE);
     }
 
     @Override
@@ -96,7 +99,7 @@ public class VirtualSacrificer implements IRecipeCategory<ModelRecipe> {
         for (var slot : slots) {
             if (slot.getSlotName().orElse("").equals("catalyst")) {
                 var stack = slot.getDisplayedItemStack().orElse(ItemStack.EMPTY);
-                for (var holder : Minecraft.getInstance().level.getRecipeManager().getAllRecipesFor(CatalystRecipe.Type.INSTANCE)) {
+	            for (var holder : com.luna.sanguine_networks.init.ModRecipes.getRecipes(Minecraft.getInstance().level, CatalystRecipe.Type.INSTANCE)) {
                     if (holder.value().getInput().test(stack)) {
                         multiplier = holder.value().getMultiplier();
                         break;
@@ -112,26 +115,26 @@ public class VirtualSacrificer implements IRecipeCategory<ModelRecipe> {
                         ItemStack stack = original.copy();
                         var model = DataModelItem.getStoredModel(stack);
                         if (model.isBound()) DataModelItem.setData(stack, model.get().getRequiredData(tier));
-                        slot.createDisplayOverrides().addItemStack(stack);
+	                    slot.createDisplayOverrides().add(stack);
                     });
                 }
                 case "blood" -> {
                     int amount = (int) (recipe.getBlood(tier) * multiplier);
                     slot.clearDisplayOverrides();
                     var overrides = slot.createDisplayOverrides();
-                    if (amount > 0) overrides.addFluidStack(NVFluids.ESSENTIA_VITAE_SOURCE.get(), amount);
+	                if (amount > 0) overrides.add(NVFluids.ESSENTIA_VITAE_SOURCE.get(), amount);
                 }
             }
         }
     }
 
     @Override
-    public void draw(ModelRecipe recipe, IRecipeSlotsView slots, GuiGraphics graphics, double mouseX, double mouseY) {
+    public void draw(ModelRecipe recipe, IRecipeSlotsView slots, GuiGraphicsExtractor graphics, double mouseX, double mouseY) {
         background.draw(graphics);
         HnnJeiStyle.drawProgress(graphics);
         updateDisplay(recipe, slots.getSlotViews().stream().filter(IRecipeSlotDrawable.class::isInstance).map(IRecipeSlotDrawable.class::cast).toList());
         var font = Minecraft.getInstance().font;
         Component tier = displayedTier().getComponent().copy();
-        graphics.drawString(font, tier, 33 - font.width(tier) / 2, 30, 0xFFFFFFFF);
+	    graphics.text(font, tier, 33 - font.width(tier) / 2, 30, 0xFFFFFFFF);
     }
 }

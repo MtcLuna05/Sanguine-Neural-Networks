@@ -1,65 +1,47 @@
 package com.luna.sanguine_networks.datagen;
 
 import com.luna.sanguine_networks.SanguineNeuralNetworks;
+import com.luna.sanguine_networks.block.SufferingIOPortBlock;
 import com.luna.sanguine_networks.init.ModBlocks;
-import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.client.data.models.BlockModelGenerators;
+import net.minecraft.client.data.models.ItemModelGenerators;
+import net.minecraft.client.data.models.ModelProvider;
+import net.minecraft.client.data.models.blockstates.MultiVariantGenerator;
+import net.minecraft.client.data.models.blockstates.PropertyDispatch;
+import net.minecraft.core.Holder;
 import net.minecraft.data.PackOutput;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
-import net.neoforged.neoforge.client.model.generators.BlockStateProvider;
-import net.neoforged.neoforge.client.model.generators.ModelFile;
-import net.neoforged.neoforge.common.data.ExistingFileHelper;
-import net.neoforged.neoforge.registries.DeferredHolder;
 
-public class ModBlockStateProvider extends BlockStateProvider {
-
-    ExistingFileHelper existingFileHelper;
-
-    public ModBlockStateProvider(PackOutput output, ExistingFileHelper exFileHelper) {
-        super(output, SanguineNeuralNetworks.MODID, exFileHelper);
-        this.existingFileHelper = exFileHelper;
-    }
+public class ModBlockStateProvider extends ModelProvider {
+	public ModBlockStateProvider(PackOutput output) {
+		super(output, SanguineNeuralNetworks.MODID);
+	}
 
     @Override
-    protected void registerStatesAndModels() {
-        horizontalBlockWithItem(ModBlocks.VIRTUAL_SACRIFICER);
-        horizontalBlockWithItem(ModBlocks.SUFFERING_INCORPORATED);
-        for (var mode : com.luna.sanguine_networks.block.SufferingIOPortBlock.Mode.values()) {
-            getVariantBuilder(ModBlocks.SUFFERING_IO_PORT.get()).partialState()
-                    .with(com.luna.sanguine_networks.block.SufferingIOPortBlock.MODE, mode)
-                .modelForState().modelFile(model(texture("suffering_io_port_" + mode.getSerializedName()))).addModel();
-        }
-        simpleBlockItem(ModBlocks.SUFFERING_IO_PORT.get(), model(texture("suffering_io_port_energy")));
+    protected void registerModels(BlockModelGenerators blockModels, ItemModelGenerators itemModels) {
+	    horizontalBlockWithItem(blockModels, ModBlocks.VIRTUAL_SACRIFICER.get(), "virtual_sacrificer");
+	    horizontalBlockWithItem(blockModels, ModBlocks.SUFFERING_INCORPORATED.get(), "suffering_incorporated");
+	    var variants = PropertyDispatch.initial(SufferingIOPortBlock.MODE);
+	    for (var mode : SufferingIOPortBlock.Mode.values())
+		    variants.select(mode, BlockModelGenerators.plainVariant(model("suffering_io_port_" + mode.getSerializedName())));
+	    blockModels.blockStateOutput.accept(MultiVariantGenerator.dispatch(ModBlocks.SUFFERING_IO_PORT.get()).with(variants));
+	    blockModels.registerSimpleItemModel(ModBlocks.SUFFERING_IO_PORT.get(), model("suffering_io_port_energy"));
     }
 
-    private void horizontalBlockWithItem(DeferredHolder<Block, ? extends Block> block){
-        horizontalBlock(
-            block.get(),
-            model(block)
-        );
-        simpleBlockItem(
-            block.get(),
-            model(block)
-        );
+	private void horizontalBlockWithItem(BlockModelGenerators models, Block block, String name) {
+		models.blockStateOutput.accept(MultiVariantGenerator.dispatch(block, BlockModelGenerators.plainVariant(model(name)))
+				.with(BlockModelGenerators.ROTATION_HORIZONTAL_FACING));
+		models.registerSimpleItemModel(block, model(name));
     }
 
-    private static ResourceLocation texture(DeferredHolder<Block, ? extends Block> block) {
-        return texture(block.getId().getPath());
+	private static Identifier model(String name) {
+		return Identifier.fromNamespaceAndPath(SanguineNeuralNetworks.MODID, "block/" + name);
     }
 
-    private static ResourceLocation texture(String name) {
-        return ResourceLocation.fromNamespaceAndPath(SanguineNeuralNetworks.MODID, "block/" + name);
-    }
-
-    private static ModelFile model(DeferredHolder<Block, ? extends Block> block) {
-        return model(texture(block));
-    }
-
-    private static ModelFile model(ResourceLocation model) {
-        return new ModelFile.UncheckedModelFile(model);
-    }
-
-    private ResourceLocation key(Block block) {
-        return BuiltInRegistries.BLOCK.getKey(block);
+	@Override
+	protected java.util.stream.Stream<? extends Holder<Item>> getKnownItems() {
+		return ModBlocks.BLOCKS.getEntries().stream().map(block -> net.minecraft.core.registries.BuiltInRegistries.ITEM.wrapAsHolder(block.get().asItem()));
     }
 }

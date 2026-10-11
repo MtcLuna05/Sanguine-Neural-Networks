@@ -1,0 +1,6 @@
+{
+  "type": "sanguine_networks:catalyst",
+  "catalyst": "minecraft:nether_star",
+  "multiplier": 5.0,
+  "uses": 100
+}

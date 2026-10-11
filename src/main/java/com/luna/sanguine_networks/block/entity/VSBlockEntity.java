@@ -4,7 +4,6 @@ import com.breakinblocks.neovitae.common.blockentity.AraVitaeTile;
 import com.luna.sanguine_networks.Config;
 import com.luna.sanguine_networks.SanguineNeuralNetworks;
 import com.luna.sanguine_networks.block.menu.VSacrificerMenu;
-import com.luna.sanguine_networks.compat.ExtraHnnCompat;
 import com.luna.sanguine_networks.init.ModBlockEntities;
 import com.luna.sanguine_networks.recipe.CatalystRecipe;
 import com.luna.sanguine_networks.recipe.ModelRecipe;
@@ -13,12 +12,10 @@ import dev.shadowsoffire.hostilenetworks.data.DataModel;
 import dev.shadowsoffire.hostilenetworks.data.ModelTier;
 import dev.shadowsoffire.hostilenetworks.data.ModelTierRegistry;
 import dev.shadowsoffire.hostilenetworks.item.DataModelItem;
-import dev.shadowsoffire.placebo.cap.ModifiableEnergyStorage;
-import dev.shadowsoffire.placebo.reload.DynamicHolder;
+import dev.shadowsoffire.placebo.dynreg.DynamicHolder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
@@ -34,32 +31,36 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.energy.IEnergyStorage;
-import net.neoforged.neoforge.items.ItemStackHandler;
-import org.jetbrains.annotations.NotNull;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+import net.neoforged.neoforge.transfer.energy.EnergyHandler;
+import net.neoforged.neoforge.transfer.energy.SimpleEnergyHandler;
+import net.neoforged.neoforge.transfer.item.ItemResource;
+import net.neoforged.neoforge.transfer.item.ItemStacksResourceHandler;
+import net.neoforged.neoforge.transfer.item.ItemUtil;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
 public class VSBlockEntity extends BlockEntity implements MenuProvider {
 
-    private final ItemStackHandler itemHandler = new ItemStackHandler(2){
+	private final ItemStacksResourceHandler itemHandler = new ItemStacksResourceHandler(2) {
         @Override
-        protected void onContentsChanged(int slot) {
+        protected void onContentsChanged(int slot, ItemStack previousContents) {
             if (slot == 0) VSBlockEntity.this.progress = 0;
             VSBlockEntity.this.sync();
         }
 
         @Override
-        public boolean isItemValid(int slot, @NotNull ItemStack stack) {
+        public boolean isValid(int slot, ItemResource resource) {
             return switch(slot){
-                case 0 -> acceptsModel(stack);
+	            case 0 -> acceptsModel(resource.toStack());
                 default -> true;
             };
 
         }
     };
-    private final ModifiableEnergyStorage energyStorage;
+	private final SimpleEnergyHandler energyStorage;
 
     private int catalystUses = 0, maxCatalystUses = 0;
     private int progress = 0, maxProgress = 0;
@@ -74,8 +75,8 @@ public class VSBlockEntity extends BlockEntity implements MenuProvider {
         @Override
         public int get(int pIndex) {
             return switch (pIndex){
-                case 0 -> VSBlockEntity.this.energyStorage.getEnergyStored();
-                case 1 -> VSBlockEntity.this.energyStorage.getMaxEnergyStored();
+	            case 0 -> VSBlockEntity.this.energyStorage.getAmountAsInt();
+	            case 1 -> VSBlockEntity.this.energyStorage.getCapacityAsInt();
                 case 2 -> catalystUses;
                 case 3 -> maxCatalystUses;
                 case 4 -> progress;
@@ -100,7 +101,12 @@ public class VSBlockEntity extends BlockEntity implements MenuProvider {
 
     public VSBlockEntity(BlockPos pPos, BlockState pBlockState) {
         super(ModBlockEntities.V_SACRIFICER_BE.get(), pPos, pBlockState);
-        energyStorage  = new ModifiableEnergyStorage(Config.sacrificerEnergy, Config.sacrificerEnergy, 0, 0);
+	    energyStorage = new SimpleEnergyHandler(Config.sacrificerEnergy, Config.sacrificerEnergy, 0) {
+		    @Override
+		    protected void onEnergyChanged(int previousAmount) {
+			    setChanged();
+		    }
+	    };
     }
 
     @Override
@@ -115,17 +121,19 @@ public class VSBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     public static boolean acceptsModel(ItemStack stack) {
-        return ExtraHnnCompat.isCombined(stack) ? Config.extraHnnModelsEnabled : stack.getItem() instanceof DataModelItem;
+	    return stack.getItem() instanceof DataModelItem;
     }
 
-    public IEnergyStorage getEnergyStorage() { return energyStorage; }
+	public EnergyHandler getEnergyStorage() {
+		return energyStorage;
+	}
 
     @Override
-    protected void saveAdditional(CompoundTag pTag, HolderLookup.Provider registries) {
-        super.saveAdditional(pTag, registries);
-        pTag.put("inventory", itemHandler.serializeNBT(registries));
+    protected void saveAdditional(ValueOutput pTag) {
+	    super.saveAdditional(pTag);
+	    itemHandler.serialize(pTag.child("inventory"));
 
-        pTag.putInt("energy", energyStorage.getEnergyStored());
+	    pTag.putInt("energy", energyStorage.getAmountAsInt());
 
         pTag.putInt("catalystUses", catalystUses);
         pTag.putInt("maxCatalystUses", maxCatalystUses);
@@ -137,29 +145,34 @@ public class VSBlockEntity extends BlockEntity implements MenuProvider {
         pTag.putInt("maxProgress", maxProgress);
 
         if(altarPos != null){
-            pTag.put("altarPos", NbtUtils.writeBlockPos(altarPos));
+	        pTag.store("altarPos", BlockPos.CODEC, altarPos);
         }
     }
 
     @Override
-    protected void loadAdditional(CompoundTag pTag, HolderLookup.Provider registries) {
-        super.loadAdditional(pTag, registries);
+    protected void loadAdditional(ValueInput pTag) {
+	    super.loadAdditional(pTag);
 
-        CompoundTag inv = pTag.getCompound("inventory");
-        itemHandler.deserializeNBT(registries, inv);
+	    itemHandler.deserialize(pTag.childOrEmpty("inventory"));
+	    for (var entry : pTag.childOrEmpty("inventory").listOrEmpty("Items",
+			    com.mojang.serialization.Codec.mapPair(com.mojang.serialization.Codec.INT.fieldOf("Slot"), ItemStack.MAP_CODEC).codec())) {
+		    int slot = entry.getFirst();
+		    ItemStack stack = entry.getSecond();
+		    if (slot >= 0 && slot < itemHandler.size()) itemHandler.set(slot, ItemResource.of(stack), stack.getCount());
+	    }
 
-        energyStorage.setEnergy(pTag.getInt("energy"));
+	    energyStorage.set(pTag.getIntOr("energy", 0));
 
-        catalystUses = pTag.getInt("catalystUses");
-        maxCatalystUses = pTag.getInt("maxCatalystUses");
+	    catalystUses = pTag.getIntOr("catalystUses", 0);
+	    maxCatalystUses = pTag.getIntOr("maxCatalystUses", 0);
 
-        catalystMult = pTag.getFloat("catalystMult");
-        toProduce = pTag.getInt("toProduce");
+	    catalystMult = pTag.getFloatOr("catalystMult", 0);
+	    toProduce = pTag.getIntOr("toProduce", 0);
 
-        progress = pTag.getInt("progress");
-        maxProgress = pTag.getInt("maxProgress");
+	    progress = pTag.getIntOr("progress", 0);
+	    maxProgress = pTag.getIntOr("maxProgress", 0);
 
-        altarPos = NbtUtils.readBlockPos(pTag, "altarPos").orElse(null);
+	    altarPos = pTag.read("altarPos", BlockPos.CODEC).orElse(null);
     }
 
     @Override
@@ -173,18 +186,24 @@ public class VSBlockEntity extends BlockEntity implements MenuProvider {
         return ClientboundBlockEntityDataPacket.create(this);
     }
 
-    public void drops() {
-        SimpleContainer container = new SimpleContainer(itemHandler.getSlots());
+	@Override
+	public void preRemoveSideEffects(BlockPos pos, BlockState state) {
+		drops();
+		super.preRemoveSideEffects(pos, state);
+	}
 
-        for (int i = 0; i < itemHandler.getSlots(); i++) {
-            container.setItem(i, itemHandler.getStackInSlot(i));
+    public void drops() {
+	    SimpleContainer container = new SimpleContainer(itemHandler.size());
+
+	    for (int i = 0; i < itemHandler.size(); i++) {
+		    container.setItem(i, ItemUtil.getStack(itemHandler, i));
         }
 
         Containers.dropContents(getLevel(), getBlockPos(), container);
     }
 
     public void tick() {
-        if(altarPos != null && level.hasChunkAt(altarPos) && level.getBlockEntity(altarPos) instanceof AraVitaeTile altar){
+	    if (altarPos != null && level.isLoaded(altarPos) && level.getBlockEntity(altarPos) instanceof AraVitaeTile altar) {
             bloodAltar = altar;
         } else {
             bloodAltar = null;
@@ -211,7 +230,9 @@ public class VSBlockEntity extends BlockEntity implements MenuProvider {
             catalystMult = catalyst.first;
             catalystUses = maxCatalystUses;
             hasCatalyst = true;
-            getCatalystStack().shrink(1);
+	        ItemStack catalystStack = getCatalystStack();
+	        catalystStack.shrink(1);
+	        itemHandler.set(1, ItemResource.of(catalystStack), catalystStack.getCount());
             sync();
         }
 
@@ -221,7 +242,7 @@ public class VSBlockEntity extends BlockEntity implements MenuProvider {
 
         toProduce = (int) (modelStats.first * catalystMult);
 
-        if(energyStorage.getEnergyStored() < modelStats.second) {
+	    if (energyStorage.getAmountAsInt() < modelStats.second) {
             sync();
             return;
         }
@@ -241,7 +262,7 @@ public class VSBlockEntity extends BlockEntity implements MenuProvider {
         }
 
         progress++;
-        energyStorage.setEnergy(energyStorage.getEnergyStored() - modelStats.second);
+	    energyStorage.set(energyStorage.getAmountAsInt() - modelStats.second);
 
         if(progress < maxProgress) {
             sync();
@@ -256,11 +277,6 @@ public class VSBlockEntity extends BlockEntity implements MenuProvider {
 
         bloodAltar.addSacrificeEV(baseProduction, true);
 
-        if (ExtraHnnCompat.isCombined(getModelStack())) {
-            ExtraHnnCompat.completeCycle(getModelStack());
-            sync();
-            return;
-        }
         int data = DataModelItem.getData(getModelStack());
 
         DataModel model = DataModelItem.getStoredModel(getModelStack()).get();
@@ -270,7 +286,9 @@ public class VSBlockEntity extends BlockEntity implements MenuProvider {
             data = (int) Math.min(Integer.MAX_VALUE, (long) data + Config.sacrificerData);
         }
 
-        DataModelItem.setData(getModelStack(), data);
+	    ItemStack modelStack = getModelStack();
+	    DataModelItem.setData(modelStack, data);
+	    itemHandler.set(0, ItemResource.of(modelStack), modelStack.getCount());
         sync();
     }
 
@@ -282,7 +300,7 @@ public class VSBlockEntity extends BlockEntity implements MenuProvider {
     public Pair<Float, Integer> getCatalystFromStack(ItemStack stack){
         if(level == null || stack.isEmpty()) return Pair.of(0f, 0);
         if(getModelStack().isEmpty()) return Pair.of(0f, 0);
-        List<CatalystRecipe> catalystRecipes = level.getRecipeManager().getAllRecipesFor(CatalystRecipe.Type.INSTANCE).stream().map(net.minecraft.world.item.crafting.RecipeHolder::value).toList();
+	    List<CatalystRecipe> catalystRecipes = com.luna.sanguine_networks.init.ModRecipes.getRecipes(level, CatalystRecipe.Type.INSTANCE).stream().map(net.minecraft.world.item.crafting.RecipeHolder::value).toList();
 
         for (CatalystRecipe recipe : catalystRecipes) {
             if(recipe.getInput().test(stack)) {
@@ -294,16 +312,15 @@ public class VSBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     public ItemStack getModelStack(){
-        return itemHandler.getStackInSlot(0);
+	    return ItemUtil.getStack(itemHandler, 0);
     }
 
     public Pair<Integer, Integer> getModelFromStack(ItemStack stack){
-        if (ExtraHnnCompat.isCombined(stack)) return Config.extraHnnModelsEnabled ? ExtraHnnCompat.getStats(stack, level) : Pair.of(0, 0);
         if (level == null || !(stack.getItem() instanceof DataModelItem)) return Pair.of(0, 0);
         DynamicHolder<DataModel> model = DataModelItem.getStoredModel(stack);
         if (!model.isBound()) return Pair.of(0, 0);
         ModelTier tier = ModelTierRegistry.getByData(model.get(), DataModelItem.getData(stack));
-        for (var holder : level.getRecipeManager().getAllRecipesFor(ModelRecipe.Type.INSTANCE)) {
+	    for (var holder : com.luna.sanguine_networks.init.ModRecipes.getRecipes(level, ModelRecipe.Type.INSTANCE)) {
             ModelRecipe recipe = holder.value();
             if (recipe.matchesModel(model.get())) {
                 return Pair.of(recipe.getBlood(tier), recipe.getEnergy());
@@ -313,10 +330,10 @@ public class VSBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     public ItemStack getCatalystStack(){
-        return itemHandler.getStackInSlot(1);
+	    return ItemUtil.getStack(itemHandler, 1);
     }
 
-    public ItemStackHandler getInventory() {
+	public ItemStacksResourceHandler getInventory() {
         return itemHandler;
     }
 

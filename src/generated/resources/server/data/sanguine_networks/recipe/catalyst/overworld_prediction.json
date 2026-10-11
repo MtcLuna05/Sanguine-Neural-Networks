@@ -1,0 +1,6 @@
+{
+  "type": "sanguine_networks:catalyst",
+  "catalyst": "hostilenetworks:overworld_prediction",
+  "multiplier": 1.5,
+  "uses": 10
+}

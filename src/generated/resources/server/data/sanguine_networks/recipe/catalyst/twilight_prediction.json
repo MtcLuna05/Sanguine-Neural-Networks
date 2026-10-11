@@ -1,0 +1,6 @@
+{
+  "type": "sanguine_networks:catalyst",
+  "catalyst": "hostilenetworks:twilight_prediction",
+  "multiplier": 2.0,
+  "uses": 50
+}

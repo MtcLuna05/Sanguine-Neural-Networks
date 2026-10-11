@@ -1,0 +1,6 @@
+{
+  "type": "sanguine_networks:catalyst",
+  "catalyst": "hostilenetworks:nether_prediction",
+  "multiplier": 1.75,
+  "uses": 25
+}

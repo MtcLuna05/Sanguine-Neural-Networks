@@ -37,20 +37,20 @@ public class SufferingIOPortBlock extends BaseEntityBlock {
     @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) { builder.add(MODE); }
     @Override public BlockEntity newBlockEntity(BlockPos pos, BlockState state) { return new SufferingIOPortBlockEntity(pos, state); }
     @Override public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-        return level.isClientSide ? null : createTickerHelper(type, ModBlockEntities.SUFFERING_PORT_BE.get(), (world, pos, blockState, port) -> port.tick());
+	    return level.isClientSide() ? null : createTickerHelper(type, ModBlockEntities.SUFFERING_PORT_BE.get(), (world, pos, blockState, port) -> port.tick());
     }
     @Override protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
-        if (!level.isClientSide) {
+	    if (!level.isClientSide()) {
             if (player.isShiftKeyDown() && level.getBlockEntity(pos) instanceof SufferingIOPortBlockEntity port && port.getAltarPos() != null) {
                 port.setAltar(null);
-                player.displayClientMessage(Component.translatable("sanguine_networks.port.unlinked"), true);
+	            player.sendOverlayMessage(Component.translatable("sanguine_networks.port.unlinked"));
             } else {
                 BlockState next = state.cycle(MODE);
                 level.setBlockAndUpdate(pos, next);
                 level.invalidateCapabilities(pos);
-                player.displayClientMessage(next.getValue(MODE).label(), true);
+	            player.sendOverlayMessage(next.getValue(MODE).label());
             }
         }
-        return InteractionResult.sidedSuccess(level.isClientSide);
+	    return InteractionResult.SUCCESS;
     }
 }

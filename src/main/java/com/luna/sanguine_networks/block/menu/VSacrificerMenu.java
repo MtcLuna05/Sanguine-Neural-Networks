@@ -11,8 +11,8 @@ import net.minecraft.world.inventory.*;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
-
-import net.neoforged.neoforge.items.SlotItemHandler;
+import net.neoforged.neoforge.transfer.item.ItemUtil;
+import net.neoforged.neoforge.transfer.item.ResourceHandlerSlot;
 import org.jetbrains.annotations.NotNull;
 
 public class VSacrificerMenu extends AbstractContainerMenu {
@@ -38,16 +38,16 @@ public class VSacrificerMenu extends AbstractContainerMenu {
 
         var iItemHandler = this.be.getInventory();
         {
-            this.addSlot(new SlotItemHandler(iItemHandler, 0, 17, 36) {
+	        this.addSlot(new ResourceHandlerSlot(iItemHandler, iItemHandler::set, 0, 17, 36) {
                 @Override
                 public boolean mayPlace(@NotNull ItemStack stack) {
                     return VSBlockEntity.acceptsModel(stack);
                 }
             });
-            this.addSlot(new SlotItemHandler(iItemHandler, 1, 80, 64) {
+	        this.addSlot(new ResourceHandlerSlot(iItemHandler, iItemHandler::set, 1, 80, 64) {
                 @Override
                 public boolean mayPlace(@NotNull ItemStack stack) {
-                    return !iItemHandler.getStackInSlot(0).isEmpty() && level.getRecipeManager().getAllRecipesFor(CatalystRecipe.Type.INSTANCE).stream().anyMatch(r -> r.value().getInput().test(stack));
+	                return !ItemUtil.getStack(iItemHandler, 0).isEmpty() && com.luna.sanguine_networks.init.ModRecipes.getRecipes(level, CatalystRecipe.Type.INSTANCE).stream().anyMatch(r -> r.value().getInput().test(stack));
                 }
             });
         }

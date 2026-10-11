@@ -2,23 +2,24 @@ package com.luna.sanguine_networks.client.screen;
 
 import com.luna.sanguine_networks.SanguineNeuralNetworks;
 import com.luna.sanguine_networks.block.menu.VSacrificerMenu;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
-import net.neoforged.neoforge.items.ItemStackHandler;
+import net.neoforged.neoforge.transfer.item.ItemStacksResourceHandler;
+import net.neoforged.neoforge.transfer.item.ItemUtil;
 
 import java.util.List;
 import java.util.Optional;
 
 public class VSacrificerScreen extends AbstractContainerScreen<VSacrificerMenu> {
 
-    public static final ResourceLocation BACKGROUND = ResourceLocation.fromNamespaceAndPath(SanguineNeuralNetworks.MODID, "textures/gui/virtual_sacrificer_bg.png");
+	public static final Identifier BACKGROUND = Identifier.fromNamespaceAndPath(SanguineNeuralNetworks.MODID, "textures/gui/virtual_sacrificer_bg.png");
 
     public VSacrificerScreen(VSacrificerMenu pMenu, Inventory pPlayerInventory, Component pTitle) {
-        super(pMenu, pPlayerInventory, pTitle);
-        imageHeight = VSacrificerMenu.SCREEN_HEIGHT;
+	    super(pMenu, pPlayerInventory, pTitle, 176, VSacrificerMenu.SCREEN_HEIGHT);
     }
 
     @Override
@@ -30,11 +31,11 @@ public class VSacrificerScreen extends AbstractContainerScreen<VSacrificerMenu> 
     }
 
     @Override
-    protected void renderBg(GuiGraphics guiGraphics, float pPartialTick, int pMouseX, int pMouseY) {
+    public void extractBackground(GuiGraphicsExtractor guiGraphics, int pMouseX, int pMouseY, float pPartialTick) {
         int x = (width - imageWidth) / 2;
         int y = (height - imageHeight) / 2;
 
-        guiGraphics.blit(
+	    guiGraphics.blit(RenderPipelines.GUI_TEXTURED,
             BACKGROUND,
             x,
             y,
@@ -46,13 +47,13 @@ public class VSacrificerScreen extends AbstractContainerScreen<VSacrificerMenu> 
             256
         );
 
-        guiGraphics.blit(ResourceLocation.parse("sanguine_networks:textures/gui/player_inventory.png"),
+	    guiGraphics.blit(RenderPipelines.GUI_TEXTURED, Identifier.parse("sanguine_networks:textures/gui/player_inventory.png"),
             x, y + VSacrificerMenu.PLAYER_PANEL_Y, 0, 0, 176, 90, 256, 256);
 
-        ItemStackHandler inventory = menu.getBlockEntity().getInventory();
+	    ItemStacksResourceHandler inventory = menu.getBlockEntity().getInventory();
 
-        if(inventory.getStackInSlot(0).isEmpty()) {
-            guiGraphics.blit(
+	    if (ItemUtil.getStack(inventory, 0).isEmpty()) {
+		    guiGraphics.blit(RenderPipelines.GUI_TEXTURED,
                 BACKGROUND,
                 leftPos + 17,
                 topPos + 36,
@@ -65,8 +66,8 @@ public class VSacrificerScreen extends AbstractContainerScreen<VSacrificerMenu> 
             );
         }
 
-        if(inventory.getStackInSlot(1).isEmpty()) {
-            guiGraphics.blit(
+	    if (ItemUtil.getStack(inventory, 1).isEmpty()) {
+		    guiGraphics.blit(RenderPipelines.GUI_TEXTURED,
                 BACKGROUND,
                 leftPos + 80,
                 topPos + 64,
@@ -82,7 +83,7 @@ public class VSacrificerScreen extends AbstractContainerScreen<VSacrificerMenu> 
         int energy = menu.getData().get(0), maxEnergy = menu.getData().get(1);
         int scaledEnergy = energy != 0 && maxEnergy != 0 ? (int) ((long) energy * 71 / maxEnergy): 0;
 
-        guiGraphics.blit(
+	    guiGraphics.blit(RenderPipelines.GUI_TEXTURED,
             BACKGROUND,
             leftPos + 160,
             topPos + 80 - scaledEnergy,
@@ -97,7 +98,7 @@ public class VSacrificerScreen extends AbstractContainerScreen<VSacrificerMenu> 
         int progress = menu.getData().get(4), maxProgress = menu.getData().get(5);
         int scaledProgress = progress != 0 && maxProgress != 0? (int) ((long) progress * 111 / maxProgress): 0;
 
-        guiGraphics.blit(
+	    guiGraphics.blit(RenderPipelines.GUI_TEXTURED,
             BACKGROUND,
             leftPos + 41,
             topPos + 41,
@@ -122,8 +123,8 @@ public class VSacrificerScreen extends AbstractContainerScreen<VSacrificerMenu> 
     }
 
     @Override
-    public void render(GuiGraphics pGuiGraphics, int pMouseX, int pMouseY, float pPartialTick) {
-        super.render(pGuiGraphics, pMouseX, pMouseY, pPartialTick);
+    public void extractRenderState(GuiGraphicsExtractor pGuiGraphicsExtractor, int pMouseX, int pMouseY, float pPartialTick) {
+	    super.extractRenderState(pGuiGraphicsExtractor, pMouseX, pMouseY, pPartialTick);
 
         Component toDisplay;
 
@@ -136,7 +137,7 @@ public class VSacrificerScreen extends AbstractContainerScreen<VSacrificerMenu> 
             toDisplay = Component.translatable("gui." + SanguineNeuralNetworks.MODID + ".produce", toProduce);
         }
 
-        pGuiGraphics.drawCenteredString(
+	    pGuiGraphicsExtractor.centeredText(
             font,
             toDisplay,
             leftPos + 87,
@@ -144,7 +145,7 @@ public class VSacrificerScreen extends AbstractContainerScreen<VSacrificerMenu> 
             0xFFFF0000
         );
 
-        pGuiGraphics.drawString(
+	    pGuiGraphicsExtractor.text(
             font,
             Component.translatable("gui." + SanguineNeuralNetworks.MODID + ".cModifier", menu.getData().get(7) / 1000f),
             leftPos + 101,
@@ -152,7 +153,7 @@ public class VSacrificerScreen extends AbstractContainerScreen<VSacrificerMenu> 
             0xFFFF0000
         );
 
-        pGuiGraphics.drawString(
+	    pGuiGraphicsExtractor.text(
             font,
             Component.translatable("gui." + SanguineNeuralNetworks.MODID + ".aModifier", menu.getData().get(10) / 1000f),
             leftPos + 16,
@@ -160,14 +161,13 @@ public class VSacrificerScreen extends AbstractContainerScreen<VSacrificerMenu> 
             0xFFFF0000
         );
 
-        renderTooltip(pGuiGraphics, pMouseX, pMouseY);
     }
 
     @Override
-    protected void renderTooltip(GuiGraphics pGuiGraphics, int pX, int pY) {
+    protected void extractTooltip(GuiGraphicsExtractor pGuiGraphicsExtractor, int pX, int pY) {
         if(isMouseHovering(leftPos + 159, topPos + 8, 9, 73, pX, pY)) {
             int energy = menu.getData().get(0), maxEnergy = menu.getData().get(1);
-            pGuiGraphics.renderTooltip(
+	        pGuiGraphicsExtractor.setTooltipForNextFrame(
                 font,
                 List.of(
                     Component.translatable("gui." + SanguineNeuralNetworks.MODID + ".energy", energy, maxEnergy),
@@ -181,7 +181,7 @@ public class VSacrificerScreen extends AbstractContainerScreen<VSacrificerMenu> 
 
         if(isMouseHovering(leftPos + 79, topPos + 60, 18, 3, pX, pY)){
             int uses = menu.getData().get(2), maxUses = menu.getData().get(3);
-            pGuiGraphics.renderTooltip(
+	        pGuiGraphicsExtractor.setTooltipForNextFrame(
                 font,
                 uses == -1 ? Component.translatable("jei.sanguine_networks.uses", "∞")
                     : Component.translatable("gui." + SanguineNeuralNetworks.MODID + ".uses", uses, maxUses),
@@ -190,7 +190,7 @@ public class VSacrificerScreen extends AbstractContainerScreen<VSacrificerMenu> 
             );
         }
 
-        super.renderTooltip(pGuiGraphics, pX, pY);
+	    super.extractTooltip(pGuiGraphicsExtractor, pX, pY);
     }
 
     public static boolean isMouseHovering(int x, int y, int width, int height, int mouseX, int mouseY) {

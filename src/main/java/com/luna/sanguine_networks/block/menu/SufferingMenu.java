@@ -9,7 +9,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.*;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.items.SlotItemHandler;
+import net.neoforged.neoforge.transfer.item.ResourceHandlerSlot;
 
 public class SufferingMenu extends AbstractContainerMenu {
     public static final int PANEL_HEIGHT = 128, PLAYER_PANEL_Y = PANEL_HEIGHT + 4;
@@ -27,9 +27,9 @@ public class SufferingMenu extends AbstractContainerMenu {
         this.entity = entity;
         this.data = data;
         for (int slot = 0; slot < 25; slot++)
-            addSlot(new SlotItemHandler(entity.getInventory(), slot, 9 + slot % 5 * 18, 21 + slot / 5 * 20));
+	        addSlot(new ResourceHandlerSlot(entity.getInventory(), entity.getInventory()::set, slot, 9 + slot % 5 * 18, 21 + slot / 5 * 20));
         for (int slot = 0; slot < 4; slot++)
-            addSlot(new SlotItemHandler(entity.getInventory(), 25 + slot, 132 + slot * 18, 20));
+	        addSlot(new ResourceHandlerSlot(entity.getInventory(), entity.getInventory()::set, 25 + slot, 132 + slot * 18, 20));
         for (int row = 0; row < 3; row++) for (int col = 0; col < 9; col++)
             addSlot(new Slot(inventory, 9 + row * 9 + col, 35 + col * 18, INVENTORY_Y + row * 18));
         for (int col = 0; col < 9; col++) addSlot(new Slot(inventory, col, 35 + col * 18, HOTBAR_Y));

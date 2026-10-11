@@ -5,12 +5,9 @@ import com.luna.sanguine_networks.init.ModRecipes;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.data.recipes.RecipeOutput;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.*;
 import net.minecraft.world.level.Level;
@@ -30,34 +27,63 @@ public class CatalystRecipe implements Recipe<RecipeInput> {
     public float getMultiplier() { return multiplier; }
 
     public static Builder create(Ingredient input, int uses, float multiplier) {
-        return new Builder(new CatalystRecipe(input, uses, multiplier), ResourceLocation.fromNamespaceAndPath(SanguineNeuralNetworks.MODID, "catalyst/" + BuiltInRegistries.ITEM.getKey(input.getItems()[0].getItem()).getPath()));
+	    return new Builder(new CatalystRecipe(input, uses, multiplier), Identifier.fromNamespaceAndPath(SanguineNeuralNetworks.MODID, "catalyst/" + BuiltInRegistries.ITEM.getKey(input.getValues().get(0).value()).getPath()));
     }
-    public record Builder(CatalystRecipe recipe, ResourceLocation id) {
-        public void save(RecipeOutput output) { output.accept(id, recipe, null); }
+
+	public record Builder(CatalystRecipe recipe, Identifier id) {
+		public void save(RecipeOutput output) {
+			output.accept(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.RECIPE, id), recipe, null);
+		}
     }
     @Override public boolean matches(RecipeInput input, Level level) { return false; }
-    @Override public ItemStack assemble(RecipeInput input, HolderLookup.Provider registries) { return ItemStack.EMPTY; }
-    @Override public boolean canCraftInDimensions(int width, int height) { return true; }
-    @Override public ItemStack getResultItem(HolderLookup.Provider registries) { return ItemStack.EMPTY; }
+
+	@Override
+	public ItemStack assemble(RecipeInput input) {
+		return ItemStack.EMPTY;
+	}
     @Override public boolean isSpecial() { return true; }
-    @Override public RecipeSerializer<?> getSerializer() { return ModRecipes.CATALYST_RECIPE_SERIALIZER.get(); }
-    @Override public RecipeType<?> getType() { return Type.INSTANCE; }
+
+	@Override
+	public boolean showNotification() {
+		return false;
+	}
+
+	@Override
+	public String group() {
+		return "";
+	}
+
+	@Override
+	public net.minecraft.world.item.crafting.PlacementInfo placementInfo() {
+		return net.minecraft.world.item.crafting.PlacementInfo.NOT_PLACEABLE;
+	}
+
+	@Override
+	public net.minecraft.world.item.crafting.RecipeBookCategory recipeBookCategory() {
+		return net.minecraft.world.item.crafting.RecipeBookCategories.CRAFTING_MISC;
+	}
+
+	@Override
+	public RecipeSerializer<CatalystRecipe> getSerializer() {
+		return ModRecipes.CATALYST_RECIPE_SERIALIZER.get();
+	}
+
+	@Override
+	public RecipeType<CatalystRecipe> getType() {
+		return Type.INSTANCE;
+	}
 
     public static class Type implements RecipeType<CatalystRecipe> {
         public static final Type INSTANCE = new Type();
     }
-    public static class Serializer implements RecipeSerializer<CatalystRecipe> {
-        public static final Serializer INSTANCE = new Serializer();
+
+	public static class Serializer {
         private static final MapCodec<CatalystRecipe> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-            Ingredient.CODEC_NONEMPTY.fieldOf("catalyst").forGetter(CatalystRecipe::getInput),
+		        Ingredient.CODEC.fieldOf("catalyst").forGetter(CatalystRecipe::getInput),
             Codec.intRange(-1, Integer.MAX_VALUE).fieldOf("uses").forGetter(CatalystRecipe::getUses),
             Codec.floatRange(0, Float.MAX_VALUE).fieldOf("multiplier").forGetter(CatalystRecipe::getMultiplier)
         ).apply(instance, CatalystRecipe::new));
-        private static final StreamCodec<RegistryFriendlyByteBuf, CatalystRecipe> STREAM_CODEC = new StreamCodec<>() {
-            @Override public CatalystRecipe decode(RegistryFriendlyByteBuf buffer) { return new CatalystRecipe(Ingredient.CONTENTS_STREAM_CODEC.decode(buffer), buffer.readInt(), buffer.readFloat()); }
-            @Override public void encode(RegistryFriendlyByteBuf buffer, CatalystRecipe recipe) { Ingredient.CONTENTS_STREAM_CODEC.encode(buffer, recipe.input); buffer.writeInt(recipe.uses); buffer.writeFloat(recipe.multiplier); }
-        };
-        @Override public MapCodec<CatalystRecipe> codec() { return CODEC; }
-        @Override public StreamCodec<RegistryFriendlyByteBuf, CatalystRecipe> streamCodec() { return STREAM_CODEC; }
+		public static final RecipeSerializer<CatalystRecipe> INSTANCE = new RecipeSerializer<>(CODEC,
+				net.minecraft.network.codec.ByteBufCodecs.fromCodecWithRegistries(CODEC.codec()));
     }
 }

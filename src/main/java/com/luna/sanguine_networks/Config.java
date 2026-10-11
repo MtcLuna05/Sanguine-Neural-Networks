@@ -5,7 +5,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
-@EventBusSubscriber(modid = SanguineNeuralNetworks.MODID, bus = EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = SanguineNeuralNetworks.MODID)
 public class Config {
     private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
 
@@ -26,13 +26,9 @@ public class Config {
         .comment("Should data be given to faulty models? [true]")
         .define("faulty_data", true);
 
-    private static final ModConfigSpec.BooleanValue EXTRA_HNN_MODELS_ENABLED = BUILDER
-        .comment("Allow Extra HNN combined models in the Virtual Sacrificer. Disabling also stops already inserted combined models.")
-        .define("extra_hnn_models_enabled", true);
     private static final ModConfigSpec.BooleanValue SUFFERING_ENABLED = BUILDER
         .comment("Enable the Suffering Incorporated multiblock and its I/O ports. Disabling preserves existing blocks and stored contents.")
         .define("suffering_enabled", true);
-    public static boolean extraHnnModelsEnabled = true;
     public static boolean sufferingEnabled = true;
 
     private static final ModConfigSpec.IntValue SUFFERING_SPEED = BUILDER
@@ -58,7 +54,6 @@ public class Config {
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {
         if (event.getConfig().getSpec() != SPEC) return;
-        extraHnnModelsEnabled = EXTRA_HNN_MODELS_ENABLED.get();
         sufferingEnabled = SUFFERING_ENABLED.get();
         sufferingSpeed = SUFFERING_SPEED.get();
         sufferingEnergy = SUFFERING_ENERGY.get();

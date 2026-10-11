@@ -11,7 +11,6 @@ import dev.shadowsoffire.hostilenetworks.data.DataModel;
 import dev.shadowsoffire.hostilenetworks.data.ModelTierRegistry;
 import dev.shadowsoffire.hostilenetworks.item.DataModelItem;
 import dev.shadowsoffire.hostilenetworks.multiblock.DataCenterShell;
-import dev.shadowsoffire.placebo.cap.ModifiableEnergyStorage;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -26,11 +25,20 @@ import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.energy.IEnergyStorage;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.neoforged.neoforge.fluids.FluidStack;
-import net.neoforged.neoforge.fluids.capability.IFluidHandler;
-import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
-import net.neoforged.neoforge.items.ItemStackHandler;
+import net.neoforged.neoforge.transfer.DelegatingResourceHandler;
+import net.neoforged.neoforge.transfer.ResourceHandler;
+import net.neoforged.neoforge.transfer.energy.EnergyHandler;
+import net.neoforged.neoforge.transfer.energy.SimpleEnergyHandler;
+import net.neoforged.neoforge.transfer.fluid.FluidResource;
+import net.neoforged.neoforge.transfer.fluid.FluidStacksResourceHandler;
+import net.neoforged.neoforge.transfer.item.ItemResource;
+import net.neoforged.neoforge.transfer.item.ItemStacksResourceHandler;
+import net.neoforged.neoforge.transfer.item.ItemUtil;
+import net.neoforged.neoforge.transfer.transaction.Transaction;
+import net.neoforged.neoforge.transfer.transaction.TransactionContext;
 
 import java.util.*;
 
@@ -62,35 +70,51 @@ public class SufferingBlockEntity extends BlockEntity implements MenuProvider {
         if (mask != syncedActiveMask) { syncedActiveMask = mask; sync(); }
     }
 
-    private final ItemStackHandler inventory = new ItemStackHandler(TOTAL_SLOTS) {
-        @Override public int getSlotLimit(int slot) { return slot < MODEL_SLOTS ? 1 : 64; }
-        @Override public boolean isItemValid(int slot, ItemStack stack) {
-            return slot < MODEL_SLOTS ? stack.getItem() instanceof DataModelItem : findCatalyst(stack) != null;
+    private final ItemStacksResourceHandler inventory = new ItemStacksResourceHandler(TOTAL_SLOTS) {
+        @Override
+        protected int getCapacity(int slot, ItemResource resource) {
+            return slot < MODEL_SLOTS ? 1 : super.getCapacity(slot, resource);
         }
-        @Override protected void onContentsChanged(int slot) {
+
+        @Override
+        public boolean isValid(int slot, ItemResource resource) {
+            return slot < MODEL_SLOTS ? resource.getItem() instanceof DataModelItem : findCatalyst(resource.toStack()) != null;
+        }
+
+        @Override
+        protected void onContentsChanged(int slot, ItemStack previousContents) {
             if (slot < MODEL_SLOTS) progress[slot] = 0;
             setChanged();
-            if (level != null && !level.isClientSide) sync();
+            if (level != null && !level.isClientSide()) sync();
         }
     };
-    private final ModifiableEnergyStorage energy = new ModifiableEnergyStorage(Config.sufferingEnergy, Config.sufferingEnergy, 0, 0) {
-        @Override public int receiveEnergy(int amount, boolean simulate) {
-            int received = super.receiveEnergy(amount, simulate);
-            if (!simulate && received > 0) setChanged();
-            return received;
+    private final SimpleEnergyHandler energy = new SimpleEnergyHandler(Config.sufferingEnergy, Config.sufferingEnergy, 0) {
+        @Override
+        protected void onEnergyChanged(int previousAmount) {
+            setChanged();
         }
     };
-    private final FluidTank tank = new FluidTank(Config.sufferingTank, fluid -> fluid.is(NVFluids.ESSENTIA_VITAE_SOURCE.get())) {
-        @Override protected void onContentsChanged() { setChanged(); }
+    private final FluidStacksResourceHandler tank = new FluidStacksResourceHandler(1, Config.sufferingTank) {
+        @Override
+        public boolean isValid(int index, FluidResource resource) {
+            return resource.getFluid() == NVFluids.ESSENTIA_VITAE_SOURCE.get();
+        }
+
+        @Override
+        protected void onContentsChanged(int index, FluidStack previousContents) {
+            setChanged();
+        }
     };
-    private final IFluidHandler output = new IFluidHandler() {
-        @Override public int getTanks() { return 1; }
-        @Override public FluidStack getFluidInTank(int index) { return tank.getFluidInTank(index).copy(); }
-        @Override public int getTankCapacity(int index) { return tank.getTankCapacity(index); }
-        @Override public boolean isFluidValid(int index, FluidStack fluid) { return false; }
-        @Override public int fill(FluidStack fluid, FluidAction action) { return 0; }
-        @Override public FluidStack drain(FluidStack fluid, FluidAction action) { return tank.drain(fluid, action); }
-        @Override public FluidStack drain(int amount, FluidAction action) { return tank.drain(amount, action); }
+    private final ResourceHandler<FluidResource> output = new DelegatingResourceHandler<>(tank) {
+        @Override
+        public boolean isValid(int index, FluidResource resource) {
+            return false;
+        }
+
+        @Override
+        public int insert(int index, FluidResource resource, int amount, TransactionContext transaction) {
+            return 0;
+        }
     };
     private final ContainerData data = new ContainerData() {
         @Override public int get(int index) {
@@ -100,10 +124,10 @@ public class SufferingBlockEntity extends BlockEntity implements MenuProvider {
             if (index >= 43 && index < 68) return status[index - 43];
             return switch (index) {
                 case 0 -> !Config.sufferingEnabled ? -1 : layout != null ? 1 : 0;
-                case 1 -> energy.getEnergyStored();
-                case 2 -> energy.getMaxEnergyStored();
-                case 3 -> tank.getFluidAmount();
-                case 4 -> tank.getCapacity();
+                case 1 -> energy.getAmountAsInt();
+                case 2 -> energy.getCapacityAsInt();
+                case 3 -> tank.getAmountAsInt(0);
+                case 4 -> tank.getCapacityAsInt(0, FluidResource.of(NVFluids.ESSENTIA_VITAE_SOURCE.get()));
                 case 5 -> running;
                 case 6 -> energyPerTick;
                 case 7 -> (int) (getCatalystMultiplier() * 1000);
@@ -118,9 +142,18 @@ public class SufferingBlockEntity extends BlockEntity implements MenuProvider {
     };
 
     public SufferingBlockEntity(BlockPos pos, BlockState state) { super(ModBlockEntities.SUFFERING_BE.get(), pos, state); }
-    public ItemStackHandler getInventory() { return inventory; }
-    public IEnergyStorage getEnergyStorage() { return energy; }
-    public IFluidHandler getFluidHandler() { return output; }
+
+    public ItemStacksResourceHandler getInventory() {
+        return inventory;
+    }
+
+    public EnergyHandler getEnergyStorage() {
+        return energy;
+    }
+
+    public ResourceHandler<FluidResource> getFluidHandler() {
+        return output;
+    }
     public DataCenterShell.Layout getLayout() { return layout; }
     public ContainerData getData() { return data; }
     public int getProgress(int slot) { return progress[slot]; }
@@ -144,7 +177,7 @@ public class SufferingBlockEntity extends BlockEntity implements MenuProvider {
     private CatalystRecipe findCatalyst(ItemStack stack) {
         if (stack.isEmpty() || level == null) return null;
         // Also used by client-side slots and automation before the first server tick.
-        for (var holder : level.getRecipeManager().getAllRecipesFor(CatalystRecipe.Type.INSTANCE)) {
+        for (var holder : com.luna.sanguine_networks.init.ModRecipes.getRecipes(level, CatalystRecipe.Type.INSTANCE)) {
             var recipe = holder.value();
             if (recipe.getUses() != 0 && recipe.getInput().test(stack)) return recipe;
         }
@@ -153,36 +186,38 @@ public class SufferingBlockEntity extends BlockEntity implements MenuProvider {
     private void loadCatalysts() {
         for (int i = 0; i < CATALYST_SLOTS; i++) {
             if (uses[i] != 0) continue;
-            ItemStack stack = inventory.getStackInSlot(MODEL_SLOTS + i);
+            ItemStack stack = ItemUtil.getStack(inventory, MODEL_SLOTS + i);
             CatalystRecipe recipe = findCatalyst(stack);
             if (recipe == null) continue;
             uses[i] = maxUses[i] = recipe.getUses();
             boosts[i] = recipe.getMultiplier();
             stack.shrink(1);
+            inventory.set(MODEL_SLOTS + i, ItemResource.of(stack), stack.getCount());
             setChanged();
         }
     }
     public boolean ownsPort(BlockPos pos) {
         return Config.sufferingEnabled && !isRemoved() && layout != null && ports.contains(pos)
-            && level != null && level.hasChunksAt(layout.shellMin(), layout.shellMax());
+                && level != null && level.isAreaLoaded(layout.centerPos(), 3);
     }
     public void clearPorts() {
         if (level != null) for (BlockPos pos : ports) {
-            if (level.hasChunkAt(pos) && level.getBlockEntity(pos) instanceof SufferingIOPortBlockEntity port
+            if (level.isLoaded(pos) && level.getBlockEntity(pos) instanceof SufferingIOPortBlockEntity port
                 && worldPosition.equals(port.getOwnerPos())) port.setOwner(null);
         }
         ports.clear();
         layout = null;
     }
     public void refreshStructure() {
-        if (level == null || level.isClientSide) return;
+        if (level == null || level.isClientSide()) return;
         if (!Config.sufferingEnabled) { clearPorts(); sync(); return; }
         var found = SufferingShell.find(worldPosition, getBlockState(), level);
         Set<BlockPos> nextPorts = new HashSet<>();
         if (found != null) found.forEachCell((pos, kind) -> {
             if (level.getBlockEntity(pos) instanceof SufferingIOPortBlockEntity) nextPorts.add(pos.immutable());
         });
-        for (BlockPos pos : ports) if (!nextPorts.contains(pos) && level.hasChunkAt(pos)
+        for (BlockPos pos : ports)
+            if (!nextPorts.contains(pos) && level.isLoaded(pos)
             && level.getBlockEntity(pos) instanceof SufferingIOPortBlockEntity port
             && worldPosition.equals(port.getOwnerPos())) port.setOwner(null);
         layout = found;
@@ -190,14 +225,14 @@ public class SufferingBlockEntity extends BlockEntity implements MenuProvider {
         ports.addAll(nextPorts);
         for (BlockPos pos : ports) ((SufferingIOPortBlockEntity) level.getBlockEntity(pos)).setOwner(worldPosition);
         modelRecipes.clear();
-        for (var holder : level.getRecipeManager().getAllRecipesFor(ModelRecipe.Type.INSTANCE)) {
+        for (var holder : com.luna.sanguine_networks.init.ModRecipes.getRecipes(level, ModelRecipe.Type.INSTANCE)) {
             var recipe = holder.value();
             recipe.getModels().forEach(model -> modelRecipes.putIfAbsent(model, recipe));
         }
         sync();
     }
     public void tick() {
-        if (level == null || level.isClientSide) return;
+        if (level == null || level.isClientSide()) return;
         if (!Config.sufferingEnabled) {
             boolean wasFormed = layout != null;
             clearPorts();
@@ -209,7 +244,7 @@ public class SufferingBlockEntity extends BlockEntity implements MenuProvider {
             return;
         }
         if (ticks++ % 20 == 0) refreshStructure();
-        if (layout != null && !level.hasChunksAt(layout.shellMin(), layout.shellMax())) layout = null;
+        if (layout != null && !level.isAreaLoaded(layout.centerPos(), 3)) layout = null;
         running = energyPerTick = 0;
         if (layout == null) {
             Arrays.fill(progress, 0);
@@ -219,17 +254,16 @@ public class SufferingBlockEntity extends BlockEntity implements MenuProvider {
             return;
         }
         if (!redstoneState.matches(level.hasNeighborSignal(worldPosition))) {
-            for (int i = 0; i < MODEL_SLOTS; i++) status[i] = inventory.getStackInSlot(i).isEmpty() ? EMPTY : REDSTONE;
+            for (int i = 0; i < MODEL_SLOTS; i++)
+                status[i] = ItemUtil.getStack(inventory, i).isEmpty() ? EMPTY : REDSTONE;
             syncActiveMask();
             return;
         }
         boolean completed = false;
         for (int i = 0; i < MODEL_SLOTS; i++) {
-            ItemStack stack = inventory.getStackInSlot(i);
+            ItemStack stack = ItemUtil.getStack(inventory, i);
             if (stack.isEmpty()) { progress[i] = 0; status[i] = EMPTY; continue; }
-            // Also reject forced/NBT-inserted combined models, not only GUI and port insertion.
-            if (!(stack.getItem() instanceof DataModelItem)
-                    || com.luna.sanguine_networks.compat.ExtraHnnCompat.isCombined(stack)) {
+            if (!(stack.getItem() instanceof DataModelItem)) {
                 progress[i] = 0; status[i] = NO_RECIPE; continue;
             }
             var model = DataModelItem.getStoredModel(stack);
@@ -241,18 +275,28 @@ public class SufferingBlockEntity extends BlockEntity implements MenuProvider {
             loadCatalysts();
             int amount = (int) Math.min(Integer.MAX_VALUE, (double) recipe.getBlood(tier) * getCatalystMultiplier());
             int cost = energyCost(recipe.getEnergy(), activeCatalysts());
-            if (amount > tank.getSpace()) { status[i] = TANK_FULL; continue; }
-            if (cost > energy.getEnergyStored()) { status[i] = NO_ENERGY; continue; }
-            energy.setEnergy(energy.getEnergyStored() - cost);
+            if (amount > (tank.getCapacityAsInt(0, FluidResource.of(NVFluids.ESSENTIA_VITAE_SOURCE.get())) - tank.getAmountAsInt(0))) {
+                status[i] = TANK_FULL;
+                continue;
+            }
+            if (cost > energy.getAmountAsInt()) {
+                status[i] = NO_ENERGY;
+                continue;
+            }
+            energy.set(energy.getAmountAsInt() - cost);
             energyPerTick = (int) Math.min(Integer.MAX_VALUE, (long) energyPerTick + cost);
             status[i] = RUNNING;
             running++;
             if (++progress[i] < Config.sufferingSpeed) continue;
             progress[i] = 0;
-            tank.fill(new FluidStack(NVFluids.ESSENTIA_VITAE_SOURCE.get(), amount), IFluidHandler.FluidAction.EXECUTE);
+            try (var transaction = Transaction.openRoot()) {
+                tank.insert(0, FluidResource.of(NVFluids.ESSENTIA_VITAE_SOURCE.get()), amount, transaction);
+                transaction.commit();
+            }
             for (int c = 0; c < CATALYST_SLOTS; c++) if (uses[c] > 0) uses[c]--;
             int oldData = DataModelItem.getData(stack);
             DataModelItem.setData(stack, (int) Math.min(Integer.MAX_VALUE, (long) oldData + Config.sacrificerData));
+            inventory.set(i, ItemResource.of(stack), stack.getCount());
             completed = true;
         }
         setChanged();
@@ -262,40 +306,68 @@ public class SufferingBlockEntity extends BlockEntity implements MenuProvider {
 
     @Override public Component getDisplayName() { return Component.translatable("block.sanguine_networks.suffering_incorporated"); }
     @Override public AbstractContainerMenu createMenu(int id, Inventory playerInventory, Player player) { return new SufferingMenu(id, playerInventory, this, data); }
+
+    @Override
+    public void preRemoveSideEffects(BlockPos pos, BlockState state) {
+        clearPorts();
+        dropInventory();
+        super.preRemoveSideEffects(pos, state);
+    }
+
     public void dropInventory() {
-        for (int i = 0; i < TOTAL_SLOTS; i++) Containers.dropItemStack(level, worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), inventory.getStackInSlot(i));
+        for (int i = 0; i < TOTAL_SLOTS; i++)
+            Containers.dropItemStack(level, worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), ItemUtil.getStack(inventory, i));
     }
     private void sync() {
         setChanged();
-        if (level != null && !level.isClientSide) level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 2);
+        if (level != null && !level.isClientSide())
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 2);
     }
-    @Override protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
-        tag.put("inventory", inventory.serializeNBT(registries));
-        tag.putInt("energy", energy.getEnergyStored());
+
+    @Override
+    protected void saveAdditional(ValueOutput tag) {
+        super.saveAdditional(tag);
+        inventory.serialize(tag.child("inventory"));
+        tag.putInt("energy", energy.getAmountAsInt());
         tag.putInt("redstoneState", redstoneState.ordinal());
-        tag.put("tank", tank.writeToNBT(registries, new CompoundTag()));
+        tank.serialize(tag.child("tank"));
         tag.putIntArray("progress", progress.clone());
         tag.putIntArray("uses", uses.clone());
         tag.putIntArray("maxUses", maxUses.clone());
         for (int i = 0; i < CATALYST_SLOTS; i++) tag.putFloat("boost" + i, boosts[i]);
     }
-    @Override protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
-        inventory.deserializeNBT(registries, tag.getCompound("inventory"));
-        redstoneState = dev.shadowsoffire.hostilenetworks.util.RedstoneState.values()[Math.clamp(tag.getInt("redstoneState"), 0, 2)];
-        energy.setEnergy(Math.clamp(tag.getInt("energy"), 0, energy.getMaxEnergyStored()));
-        tank.readFromNBT(registries, tag.getCompound("tank"));
+
+    @Override
+    protected void loadAdditional(ValueInput tag) {
+        super.loadAdditional(tag);
+        inventory.deserialize(tag.childOrEmpty("inventory"));
+        for (var entry : tag.childOrEmpty("inventory").listOrEmpty("Items",
+                com.mojang.serialization.Codec.mapPair(com.mojang.serialization.Codec.INT.fieldOf("Slot"), ItemStack.MAP_CODEC).codec())) {
+            int slot = entry.getFirst();
+            ItemStack stack = entry.getSecond();
+            if (slot >= 0 && slot < inventory.size()) inventory.set(slot, ItemResource.of(stack), stack.getCount());
+        }
+        redstoneState = dev.shadowsoffire.hostilenetworks.util.RedstoneState.values()[Math.clamp(tag.getIntOr("redstoneState", 0), 0, 2)];
+        energy.set(Math.clamp(tag.getIntOr("energy", 0), 0, energy.getCapacityAsInt()));
+        tank.deserialize(tag.childOrEmpty("tank"));
+        if (!tag.childOrEmpty("tank").keySet().contains("stacks"))
+            tag.read("tank", FluidStack.OPTIONAL_CODEC).ifPresent(stack -> tank.set(0, FluidResource.of(stack), stack.getAmount()));
         readArray(tag, "progress", progress);
         readArray(tag, "uses", uses);
         readArray(tag, "maxUses", maxUses);
         readArray(tag, "status", status);
-        for (int i = 0; i < CATALYST_SLOTS; i++) boosts[i] = tag.getFloat("boost" + i);
-        layout = tag.contains("shellMinX") ? DataCenterShell.Layout.readLayout(tag, worldPosition) : null;
+        for (int i = 0; i < CATALYST_SLOTS; i++) boosts[i] = tag.getFloatOr("boost" + i, 0);
+        layout = null;
+        if (tag.getInt("shellMinX").isPresent()) {
+            BlockPos min = new BlockPos(tag.getIntOr("shellMinX", 0), tag.getIntOr("shellMinY", 0), tag.getIntOr("shellMinZ", 0));
+            layout = new DataCenterShell.Layout(worldPosition, net.minecraft.core.Direction.from3DDataValue(tag.getIntOr("wallFaceOrd", 0)),
+                    min, min.offset(6, 6, 6), min.offset(3, 3, 3));
+        }
     }
-    private static void readArray(CompoundTag tag, String key, int[] target) {
+
+    private static void readArray(ValueInput tag, String key, int[] target) {
         Arrays.fill(target, 0);
-        int[] saved = tag.getIntArray(key);
+        int[] saved = tag.getIntArray(key).orElseGet(() -> new int[0]);
         System.arraycopy(saved, 0, target, 0, Math.min(saved.length, target.length));
     }
     @Override public CompoundTag getUpdateTag(HolderLookup.Provider registries) {

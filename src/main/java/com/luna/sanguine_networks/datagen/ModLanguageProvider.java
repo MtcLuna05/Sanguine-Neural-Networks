@@ -15,7 +15,6 @@ public class ModLanguageProvider extends LanguageProvider {
     @Override
     protected void addTranslations() {
         add("sanguine_networks.suffering.status.8", "Suffering Incorporated is disabled in the config");
-        add("jei.sanguine_networks.combined_models", "Virtual Sacrificer only: sums blood from all four inner models at the Extra HNN tier. Power: 10× the sum of their recipe costs. Consumes one catalyst use per completed cycle. Cannot be used in Suffering Incorporated.");
         add("sanguine_networks.suffering.status.7", "Paused by redstone");
         add("block.sanguine_networks.suffering_incorporated", "Suffering Inc©");
         add("block.sanguine_networks.suffering_io_port", "Suffering Inc© I/O Port");

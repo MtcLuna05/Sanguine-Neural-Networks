@@ -1,8 +1,0 @@
-{
-  "type": "sanguine_networks:catalyst",
-  "catalyst": {
-    "item": "hostilenetworks:end_prediction"
-  },
-  "multiplier": 2.25,
-  "uses": 50
-}

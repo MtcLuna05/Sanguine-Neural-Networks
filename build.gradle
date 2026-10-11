@@ -1,31 +1,35 @@
 plugins {
     id 'java-library'
     id 'idea'
-    id 'net.neoforged.moddev' version '2.0.141'
+    id 'net.neoforged.moddev' version '2.0.148'
 }
 
 group = mod_group_id
 version = mod_version
 base { archivesName = "${mod_id}-${minecraft_version}" }
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
 neoForge {
     version = neo_version
     runs {
         client { client(); gameDirectory = file('run/client') }
         server { server(); gameDirectory = file('run/server'); programArgument '--nogui' }
-        data {
-            data()
-            programArguments.addAll '--mod', mod_id, '--all', '--output', file('src/generated/resources/').absolutePath, '--existing', file('src/main/resources/').absolutePath
+        clientData {
+            clientData()
+            programArguments.addAll '--mod', mod_id, '--all', '--output', file('src/generated/resources/client/').absolutePath, '--existing', file('src/main/resources').absolutePath
+        }
+        serverData {
+            serverData()
+            programArguments.addAll '--mod', mod_id, '--all', '--output', file('src/generated/resources/server/').absolutePath, '--existing', file('src/main/resources').absolutePath
         }
     }
     mods { "${mod_id}" { sourceSet sourceSets.main } }
 }
-sourceSets.main.resources { srcDir 'src/generated/resources' }
+sourceSets.main.resources { srcDirs 'src/generated/resources/client', 'src/generated/resources/server' }
 repositories {
-    maven { url = 'https://www.cursemaven.com'; content { includeGroup 'curse.maven' } }
     maven { url = 'https://api.modrinth.com/maven'; content { includeGroup 'maven.modrinth' } }
-    maven { url = 'https://maven.blamejared.com'; content { includeGroup 'mezz.jei' } }
+    maven { url = 'https://maven.blamejared.com';
+        content { includeGroup 'mezz.jei'; includeGroup 'net.mezzdev.config' } }
 }
 dependencies {
     implementation "maven.modrinth:hostile-neural-networks:${hnn_version}"
@@ -33,11 +37,9 @@ dependencies {
     implementation "maven.modrinth:neovitae:${neovitae_version}"
     implementation "maven.modrinth:geckolib:${geckolib_version}"
     runtimeOnly "maven.modrinth:modonomicon:${modonomicon_version}"
-    runtimeOnly "maven.modrinth:mekanism:${mekanism_version}"
-    compileOnly "curse.maven:extra-hostile-neural-networks-1162278:${extrahnn_file_id}"
-    if (!project.hasProperty('withoutExtraHnn')) {
-        runtimeOnly "curse.maven:extra-hostile-neural-networks-1162278:${extrahnn_file_id}"
-    }
+    runtimeOnly "maven.modrinth:powah:${powah_version}"
+    runtimeOnly "maven.modrinth:cloth-config:${cloth_config_version}"
+    runtimeOnly "maven.modrinth:guideme:${guideme_version}"
     compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
     runtimeOnly "mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}"
 }
@@ -53,9 +55,6 @@ tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
 // Test fixtures are loaded only by an explicitly requested GameTest run.
 if (project.hasProperty('gameTests')) {
     sourceSets.main.java.srcDir 'src/gametest/java'
-    if (project.hasProperty('withoutExtraHnn')) {
-        sourceSets.main.java.exclude '**/ExtraHnnTests.java'
-    }
     sourceSets.main.resources.srcDir 'src/gametest/resources'
     neoForge.runs {
         gameTestServer {

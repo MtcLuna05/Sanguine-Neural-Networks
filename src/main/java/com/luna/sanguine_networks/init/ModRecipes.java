@@ -8,7 +8,25 @@ import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
+@net.neoforged.fml.common.EventBusSubscriber(modid = SanguineNeuralNetworks.MODID)
 public class ModRecipes {
+	private static net.minecraft.world.item.crafting.RecipeMap clientRecipes = net.minecraft.world.item.crafting.RecipeMap.EMPTY;
+
+	public static void setClientRecipes(net.minecraft.world.item.crafting.RecipeMap recipes) {
+		clientRecipes = recipes;
+	}
+
+	public static <I extends net.minecraft.world.item.crafting.RecipeInput, T extends net.minecraft.world.item.crafting.Recipe<I>> java.util.Collection<net.minecraft.world.item.crafting.RecipeHolder<T>> getRecipes(
+			net.minecraft.world.level.Level level, net.minecraft.world.item.crafting.RecipeType<T> type) {
+		var recipes = level instanceof net.minecraft.server.level.ServerLevel server ? server.recipeAccess().recipeMap() : clientRecipes;
+		return recipes.byType(type);
+	}
+
+	@net.neoforged.bus.api.SubscribeEvent
+	public static void syncRecipes(net.neoforged.neoforge.event.OnDatapackSyncEvent event) {
+		event.sendRecipes(ModelRecipe.Type.INSTANCE, CatalystRecipe.Type.INSTANCE);
+	}
+
     public static final DeferredRegister<net.minecraft.world.item.crafting.RecipeType<?>> TYPES =
         DeferredRegister.create(net.minecraft.core.registries.Registries.RECIPE_TYPE, SanguineNeuralNetworks.MODID);
     static {

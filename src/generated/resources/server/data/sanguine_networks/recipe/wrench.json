@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "R": "minecraft:redstone",
+    "S": "minecraft:stick",
+    "s": "neovitae:tabula_rasa"
+  },
+  "pattern": [
+    " Rs",
+    " SR",
+    "S  "
+  ],
+  "result": {
+    "id": "sanguine_networks:wrench"
+  }
+}
